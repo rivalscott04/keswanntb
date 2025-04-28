@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tahap_verifikasis', function (Blueprint $table) {
+        Schema::create('pengaturan', function (Blueprint $table) {
             $table->id();
-            $table->string('nama');
-            $table->integer('urutan');
+            $table->string('key')->unique();
+            $table->text('value');
             $table->timestamps();
         });
     }
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tahap_verifikasis');
+        Schema::dropIfExists('pengaturan');
     }
 };

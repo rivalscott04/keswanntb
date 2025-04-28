@@ -11,6 +11,8 @@ class KabKota extends Model
 {
     use HasFactory;
 
+    protected $table = 'kab_kota';
+
     protected $fillable = [
         'provinsi_id',
         'nama',

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\WewenangResource\Pages;
 use App\Filament\Resources\WewenangResource\RelationManagers;
+use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\Wewenang;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class WewenangResource extends Resource
 {
+    use HasAdminOnlyAccess;
+
     protected static ?string $model = Wewenang::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-key';

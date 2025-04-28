@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\BidangResource\Pages;
 use App\Filament\Resources\BidangResource\RelationManagers;
+use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\Bidang;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class BidangResource extends Resource
 {
+    use HasAdminOnlyAccess;
+
     protected static ?string $model = Bidang::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';

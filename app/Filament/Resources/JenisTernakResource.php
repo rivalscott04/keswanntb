@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\JenisTernakResource\Pages;
 use App\Filament\Resources\JenisTernakResource\RelationManagers;
+use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\JenisTernak;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class JenisTernakResource extends Resource
 {
+    use HasAdminOnlyAccess;
+
     protected static ?string $model = JenisTernak::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-bookmark';

@@ -10,6 +10,8 @@ class Wewenang extends Model
 {
     use HasFactory;
 
+    protected $table = 'wewenang';
+
     protected $fillable = [
         'nama',
     ];

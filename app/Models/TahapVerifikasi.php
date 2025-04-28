@@ -10,6 +10,8 @@ class TahapVerifikasi extends Model
 {
     use HasFactory;
 
+    protected $table = 'tahap_verifikasi';
+
     protected $fillable = [
         'nama',
         'urutan',

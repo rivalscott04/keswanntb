@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProvinsiResource\Pages;
 use App\Filament\Resources\ProvinsiResource\RelationManagers;
+use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\Provinsi;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ProvinsiResource extends Resource
 {
+    use HasAdminOnlyAccess;
+
     protected static ?string $model = Provinsi::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-map';

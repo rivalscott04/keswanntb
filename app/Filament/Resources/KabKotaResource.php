@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\KabKotaResource\Pages;
 use App\Filament\Resources\KabKotaResource\RelationManagers;
+use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\KabKota;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class KabKotaResource extends Resource
 {
+    use HasAdminOnlyAccess;
+
     protected static ?string $model = KabKota::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office-2';

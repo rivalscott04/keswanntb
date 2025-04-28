@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PengaturanResource\Pages;
 use App\Filament\Resources\PengaturanResource\RelationManagers;
+use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\Pengaturan;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PengaturanResource extends Resource
 {
+    use HasAdminOnlyAccess;
+
     protected static ?string $model = Pengaturan::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';

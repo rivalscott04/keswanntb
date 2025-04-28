@@ -24,6 +24,7 @@ class UserSeeder extends Seeder
             'kab_kota_id' => 1,
             'no_hp' => '081234567890',
             'alamat' => 'Jl. Admin No. 1',
+            'is_admin' => true,
         ]);
 
         // Disnak Provinsi user

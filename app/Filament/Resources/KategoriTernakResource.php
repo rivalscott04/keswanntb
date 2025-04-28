@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\KategoriTernakResource\Pages;
 use App\Filament\Resources\KategoriTernakResource\RelationManagers;
+use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\KategoriTernak;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class KategoriTernakResource extends Resource
 {
+    use HasAdminOnlyAccess;
+
     protected static ?string $model = KategoriTernak::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';

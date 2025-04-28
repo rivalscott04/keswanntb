@@ -10,11 +10,16 @@ class Kuota extends Model
 {
     use HasFactory;
 
+    protected $table = 'kuota';
+
     protected $fillable = [
         'jenis_ternak_id',
         'kab_kota_id',
         'tahun',
         'kuota',
+        'jenis_kuota',
+        'jenis_kelamin',
+        'pulau',
     ];
 
     public function jenisTernak(): BelongsTo

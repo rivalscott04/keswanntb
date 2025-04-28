@@ -4,75 +4,35 @@ namespace Database\Seeders;
 
 use App\Models\Kuota;
 use Illuminate\Database\Seeder;
+use App\Models\JenisTernak;
+use App\Models\KabKota;
 
 class KuotaSeeder extends Seeder
 {
     public function run(): void
     {
-        // Kuota terima sapi
-        Kuota::create([
-            'tahun' => 2023,
-            'jenis_ternak_id' => 1,
-            'kab_kota_id' => 1,
-            'kuota' => 7500,
-        ]);
+        $tahun = 2025;
+        $jenisKelamin = ['jantan', 'betina'];
+        $jenisKuota = ['pemasukan', 'pengeluaran'];
+        $jenisTernaks = JenisTernak::all();
+        $kabKotas = KabKota::all();
 
-        Kuota::create([
-            'tahun' => 2023,
-            'jenis_ternak_id' => 1,
-            'kab_kota_id' => 2,
-            'kuota' => 21000,
-        ]);
-
-        Kuota::create([
-            'tahun' => 2023,
-            'jenis_ternak_id' => 1,
-            'kab_kota_id' => 3,
-            'kuota' => 5000,
-        ]);
-
-        Kuota::create([
-            'tahun' => 2023,
-            'jenis_ternak_id' => 1,
-            'kab_kota_id' => 4,
-            'kuota' => 5000,
-        ]);
-
-        // Kuota terima kerbau
-        Kuota::create([
-            'tahun' => 2023,
-            'jenis_ternak_id' => 2,
-            'kab_kota_id' => 6,
-            'kuota' => 500,
-        ]);
-
-        Kuota::create([
-            'tahun' => 2023,
-            'jenis_ternak_id' => 2,
-            'kab_kota_id' => 7,
-            'kuota' => 1500,
-        ]);
-
-        Kuota::create([
-            'tahun' => 2023,
-            'jenis_ternak_id' => 2,
-            'kab_kota_id' => 8,
-            'kuota' => 550,
-        ]);
-
-        Kuota::create([
-            'tahun' => 2023,
-            'jenis_ternak_id' => 2,
-            'kab_kota_id' => 9,
-            'kuota' => 900,
-        ]);
-
-        // Kuota terima sapi eksotik
-        Kuota::create([
-            'tahun' => 2023,
-            'jenis_ternak_id' => 4,
-            'kab_kota_id' => 1,
-            'kuota' => 60000,
-        ]);
+        foreach ($jenisTernaks as $jenisTernak) {
+            foreach ($kabKotas as $kabKota) {
+                foreach ($jenisKelamin as $kelamin) {
+                    foreach ($jenisKuota as $jkuota) {
+                        \App\Models\Kuota::create([
+                            'jenis_ternak_id' => $jenisTernak->id,
+                            'kab_kota_id' => $kabKota->id,
+                            'tahun' => $tahun,
+                            'kuota' => rand(10, 100),
+                            'jenis_kuota' => $jkuota,
+                            'jenis_kelamin' => $kelamin,
+                            'pulau' => '',
+                        ]);
+                    }
+                }
+            }
+        }
     }
-} 
+}

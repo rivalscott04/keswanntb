@@ -10,6 +10,8 @@ class Bidang extends Model
 {
     use HasFactory;
 
+    protected $table = 'bidang';
+
     protected $fillable = [
         'nama',
     ];

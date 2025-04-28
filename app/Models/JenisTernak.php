@@ -11,6 +11,8 @@ class JenisTernak extends Model
 {
     use HasFactory;
 
+    protected $table = 'jenis_ternak';
+
     protected $fillable = [
         'kategori_ternak_id',
         'bidang_id',

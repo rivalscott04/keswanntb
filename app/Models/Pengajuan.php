@@ -10,6 +10,8 @@ class Pengajuan extends Model
 {
     use HasFactory;
 
+    protected $table = 'pengajuan';
+
     protected $fillable = [
         'user_id',
         'jenis_ternak_id',
@@ -49,5 +51,25 @@ class Pengajuan extends Model
     public function tahapVerifikasi(): BelongsTo
     {
         return $this->belongsTo(TahapVerifikasi::class);
+    }
+
+    public function kabKotaAsal()
+    {
+        return $this->belongsTo(KabKota::class, 'kab_kota_asal_id');
+    }
+
+    public function kabKotaTujuan()
+    {
+        return $this->belongsTo(KabKota::class, 'kab_kota_tujuan_id');
+    }
+
+    public function provinsiAsal()
+    {
+        return $this->belongsTo(Provinsi::class, 'provinsi_asal_id');
+    }
+
+    public function provinsiTujuan()
+    {
+        return $this->belongsTo(Provinsi::class, 'provinsi_tujuan_id');
     }
 }
