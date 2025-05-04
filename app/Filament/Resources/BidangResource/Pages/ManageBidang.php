@@ -4,16 +4,17 @@ namespace App\Filament\Resources\BidangResource\Pages;
 
 use App\Filament\Resources\BidangResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Resources\Pages\ManageRecords;
 
-class EditBidang extends EditRecord
+class ManageBidang extends ManageRecords
 {
     protected static string $resource = BidangResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\CreateAction::make()
+                ->modalWidth('2xl'),
         ];
     }
 }

@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\JenisTernakResource\Pages;
 use App\Filament\Resources\JenisTernakResource\RelationManagers;
-use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\JenisTernak;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -16,8 +15,6 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class JenisTernakResource extends Resource
 {
-    use HasAdminOnlyAccess;
-
     protected static ?string $model = JenisTernak::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-bookmark';
@@ -38,7 +35,8 @@ class JenisTernakResource extends Resource
                     ->required(),
                 Forms\Components\TextInput::make('nama')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -47,16 +45,11 @@ class JenisTernakResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('kategoriTernak.nama')
-                    ->sortable()
-                    ->searchable(),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('bidang.nama')
-                    ->sortable()
-                    ->searchable(),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('nama')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('pengajuans_count')
-                    ->counts('pengajuans')
-                    ->label('Jumlah Pengajuan'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -80,19 +73,10 @@ class JenisTernakResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListJenisTernaks::route('/'),
-            'create' => Pages\CreateJenisTernak::route('/create'),
-            'edit' => Pages\EditJenisTernak::route('/{record}/edit'),
+            'index' => Pages\ManageJenisTernaks::route('/'),
         ];
     }
 }

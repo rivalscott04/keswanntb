@@ -23,6 +23,7 @@ class KuotaResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
     protected static ?string $navigationGroup = 'Kuota';
     protected static ?int $navigationSort = 1;
+    protected static ?string $slug = 'kuota';
 
     public static function form(Form $form): Form
     {

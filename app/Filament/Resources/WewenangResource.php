@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\WewenangResource\Pages;
 use App\Filament\Resources\WewenangResource\RelationManagers;
-use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\Wewenang;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -16,13 +15,13 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class WewenangResource extends Resource
 {
-    use HasAdminOnlyAccess;
-
     protected static ?string $model = Wewenang::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-key';
-    protected static ?string $navigationGroup = 'Master Data';
-    protected static ?int $navigationSort = 6;
+    protected static ?string $navigationGroup = 'Pengaturan';
+    protected static ?int $navigationSort = 3;
+    protected static ?string $slug = 'wewenang';
+
 
     public static function form(Form $form): Form
     {
@@ -30,7 +29,8 @@ class WewenangResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('nama')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -40,9 +40,6 @@ class WewenangResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('nama')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('users_count')
-                    ->counts('users')
-                    ->label('Jumlah User'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -56,7 +53,8 @@ class WewenangResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->modalWidth('2xl'),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -66,19 +64,10 @@ class WewenangResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListWewenangs::route('/'),
-            'create' => Pages\CreateWewenang::route('/create'),
-            'edit' => Pages\EditWewenang::route('/{record}/edit'),
+            'index' => Pages\ManageWewenang::route('/'),
         ];
     }
 }

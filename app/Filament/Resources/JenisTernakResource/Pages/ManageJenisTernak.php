@@ -4,16 +4,16 @@ namespace App\Filament\Resources\JenisTernakResource\Pages;
 
 use App\Filament\Resources\JenisTernakResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Resources\Pages\ManageRecords;
 
-class EditJenisTernak extends EditRecord
+class ManageJenisTernak extends ManageRecords
 {
     protected static string $resource = JenisTernakResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\CreateAction::make(),
         ];
     }
 }

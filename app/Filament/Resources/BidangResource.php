@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\BidangResource\Pages;
 use App\Filament\Resources\BidangResource\RelationManagers;
-use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\Bidang;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -16,13 +15,12 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class BidangResource extends Resource
 {
-    use HasAdminOnlyAccess;
-
     protected static ?string $model = Bidang::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';
     protected static ?string $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 5;
+    protected static ?string $slug = 'bidang';
 
     public static function form(Form $form): Form
     {
@@ -30,7 +28,8 @@ class BidangResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('nama')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -40,12 +39,6 @@ class BidangResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('nama')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('users_count')
-                    ->counts('users')
-                    ->label('Jumlah User'),
-                Tables\Columns\TextColumn::make('jenisTernaks_count')
-                    ->counts('jenisTernaks')
-                    ->label('Jumlah Jenis Ternak'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -59,7 +52,8 @@ class BidangResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->modalWidth('2xl'),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -69,19 +63,10 @@ class BidangResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListBidangs::route('/'),
-            'create' => Pages\CreateBidang::route('/create'),
-            'edit' => Pages\EditBidang::route('/{record}/edit'),
+            'index' => Pages\ManageBidang::route('/'),
         ];
     }
 }

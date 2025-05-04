@@ -29,12 +29,14 @@ return new class extends Migration {
 
             // Lokasi asal
             $table->foreignId('provinsi_asal_id')->nullable()->constrained('provinsi')->cascadeOnDelete();
-            $table->foreignId('kab_kota_asal_id')->constrained('kab_kota')->cascadeOnDelete();
+            $table->foreignId('kab_kota_asal_id')->nullable()->constrained('kab_kota')->cascadeOnDelete();
+            $table->string('kab_kota_asal')->nullable();
             $table->string('pelabuhan_asal')->nullable();
 
             // Lokasi tujuan
             $table->foreignId('provinsi_tujuan_id')->nullable()->constrained('provinsi')->cascadeOnDelete();
-            $table->foreignId('kab_kota_tujuan_id')->constrained('kab_kota')->cascadeOnDelete();
+            $table->foreignId('kab_kota_tujuan_id')->nullable()->constrained('kab_kota')->cascadeOnDelete();
+            $table->string('kab_kota_tujuan')->nullable();
             $table->string('pelabuhan_tujuan')->nullable();
 
             // Informasi ternak
@@ -44,7 +46,7 @@ return new class extends Migration {
 
             // Status dan tracking
             $table->foreignId('tahap_verifikasi_id')->constrained('tahap_verifikasi')->cascadeOnDelete();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('menunggu');
             $table->integer('tahun_pengajuan');
             $table->text('keterangan')->nullable();
 

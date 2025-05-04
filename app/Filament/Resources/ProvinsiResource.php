@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProvinsiResource\Pages;
 use App\Filament\Resources\ProvinsiResource\RelationManagers;
-use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\Provinsi;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -16,13 +15,12 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ProvinsiResource extends Resource
 {
-    use HasAdminOnlyAccess;
-
     protected static ?string $model = Provinsi::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-map';
     protected static ?string $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 1;
+    protected static ?string $slug = 'provinsi';
 
     public static function form(Form $form): Form
     {
@@ -30,7 +28,8 @@ class ProvinsiResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('nama')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -40,9 +39,6 @@ class ProvinsiResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('nama')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('kabKotas_count')
-                    ->counts('kabKotas')
-                    ->label('Jumlah Kab/Kota'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -56,7 +52,8 @@ class ProvinsiResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->modalWidth('2xl'),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -66,19 +63,10 @@ class ProvinsiResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListProvinsis::route('/'),
-            'create' => Pages\CreateProvinsi::route('/create'),
-            'edit' => Pages\EditProvinsi::route('/{record}/edit'),
+            'index' => Pages\ManageProvinsi::route('/'),
         ];
     }
 }

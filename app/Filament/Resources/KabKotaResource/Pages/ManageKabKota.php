@@ -4,9 +4,9 @@ namespace App\Filament\Resources\KabKotaResource\Pages;
 
 use App\Filament\Resources\KabKotaResource;
 use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Resources\Pages\ManageRecords;
 
-class ListKabKotas extends ListRecords
+class ManageKabKota extends ManageRecords
 {
     protected static string $resource = KabKotaResource::class;
 

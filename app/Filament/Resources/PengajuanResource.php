@@ -2,17 +2,18 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\PengajuanResource\Pages;
-use App\Filament\Resources\PengajuanResource\RelationManagers;
-use App\Models\Pengajuan;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use App\Models\Kuota;
+use App\Models\KabKota;
+use Filament\Forms\Form;
+use App\Models\Pengajuan;
 use Filament\Tables\Table;
+use App\Models\JenisTernak;
+use Filament\Resources\Resource;
+use App\Services\PengajuanService;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\Facades\Auth;
+use App\Filament\Resources\PengajuanResource\Pages;
 
 class PengajuanResource extends Resource
 {
@@ -21,11 +22,49 @@ class PengajuanResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationGroup = 'Pengajuan';
     protected static ?int $navigationSort = 1;
-    protected static ?string $modelLabel = 'Pengajuan';
-    protected static ?string $pluralModelLabel = 'Pengajuan';
+    protected static ?string $label = 'Pengajuan Antar Kab/Kota NTB';
+    protected static ?string $slug = 'pengajuan';
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->where('jenis_pengajuan', 'antar_kab_kota');
+    }
 
     public static function form(Form $form): Form
     {
+        $cekKuotaTersedia = function (callable $get) {
+            $tahun = $get('tahun_pengajuan');
+            $jenisTernakId = $get('jenis_ternak_id');
+            $kabKotaAsalId = $get('kab_kota_asal_id');
+            $kabKotaTujuanId = $get('kab_kota_tujuan_id');
+            $jenisKelamin = $get('jenis_kelamin');
+
+            // Cek kuota pemasukan di kota tujuan
+            $kuotaPemasukan = Kuota::where('tahun', $tahun)
+                ->where('jenis_ternak_id', $jenisTernakId)
+                ->where('kab_kota_id', $kabKotaTujuanId)
+                ->where('jenis_kelamin', $jenisKelamin)
+                ->where('jenis_kuota', 'pemasukan')
+                ->value('kuota') ?? 0;
+
+            // Cek kuota pengeluaran di kota asal
+            $kuotaPengeluaran = Kuota::where('tahun', $tahun)
+                ->where('jenis_ternak_id', $jenisTernakId)
+                ->where('kab_kota_id', $kabKotaAsalId)
+                ->where('jenis_kelamin', $jenisKelamin)
+                ->where('jenis_kuota', 'pengeluaran')
+                ->value('kuota') ?? 0;
+
+            // Ambil nilai terkecil
+            $kuotaTersedia = min($kuotaPemasukan, $kuotaPengeluaran);
+
+            return [
+                'kuota' => $kuotaTersedia,
+                'pemasukan' => $kuotaPemasukan,
+                'pengeluaran' => $kuotaPengeluaran
+            ];
+        };
+
         return $form
             ->schema([
                 Forms\Components\Select::make('tahun_pengajuan')
@@ -33,62 +72,23 @@ class PengajuanResource extends Resource
                     ->options(collect(range(date('Y'), date('Y') - 4))->mapWithKeys(fn($y) => [$y => $y])->toArray())
                     ->default(date('Y'))
                     ->required()
-                    ->live(),
-
-                Forms\Components\Select::make('kategori_ternak_id')
-                    ->label('Kategori Ternak')
-                    ->relationship('kategoriTernak', 'nama')
-                    ->required()
-                    ->live(),
-
-                Forms\Components\Select::make('jenis_kelamin')
-                    ->label('Jenis Kelamin')
-                    ->options([
-                        'jantan' => 'Jantan',
-                        'betina' => 'Betina',
-                    ])
-                    ->required()
-                    ->live(),
-
-                Forms\Components\Section::make('Dokumen')
-                    ->schema([
-                        Forms\Components\FileUpload::make('surat_permohonan')
-                            ->label('Surat Permohonan Perusahaan')
-                            ->required(false),
-
-                        Forms\Components\TextInput::make('nomor_surat_permohonan')
-                            ->label('Nomor Surat Permohonan Perusahaan')
-                            ->required(),
-
-                        Forms\Components\DatePicker::make('tanggal_surat_permohonan')
-                            ->label('Tanggal Surat Permohonan Perusahaan')
-                            ->required(),
-
-                        Forms\Components\FileUpload::make('skkh')
-                            ->label('SKKH')
-                            ->required(false),
-
-                        Forms\Components\TextInput::make('nomor_skkh')
-                            ->label('No. SKKH')
-                            ->required(),
-
-                        Forms\Components\FileUpload::make('hasil_uji_lab')
-                            ->label('Hasil Uji Lab')
-                            ->required(false),
-
-                        Forms\Components\FileUpload::make('dokumen_lainnya')
-                            ->label('Dokumen Lainnya (Jika Ada)')
-                            ->multiple(),
-                    ]),
+                    ->live()
+                    ->columnSpanFull(),
 
                 Forms\Components\Section::make('Lokasi')
                     ->schema([
                         Forms\Components\Select::make('kab_kota_asal_id')
                             ->label('Kab/Kota Asal Ternak')
-                            ->relationship('kabKotaAsal', 'nama')
+                            ->options(
+                                fn(callable $get) =>
+                                KabKota::when($get('kab_kota_tujuan_id'), function ($query, $tujuanId) {
+                                    return $query->where('id', '!=', $tujuanId);
+                                })->pluck('nama', 'id')
+                            )
                             ->searchable()
                             ->preload()
-                            ->required(),
+                            ->required()
+                            ->live(),
 
                         Forms\Components\TextInput::make('pelabuhan_asal')
                             ->label('Nama Pelabuhan Asal')
@@ -96,24 +96,54 @@ class PengajuanResource extends Resource
 
                         Forms\Components\Select::make('kab_kota_tujuan_id')
                             ->label('Kab/Kota Tujuan Ternak')
-                            ->relationship('kabKotaTujuan', 'nama')
+                            ->options(
+                                fn(callable $get) =>
+                                KabKota::when($get('kab_kota_asal_id'), function ($query, $asalId) {
+                                    return $query->where('id', '!=', $asalId);
+                                })->pluck('nama', 'id')
+                            )
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                if ($state === $get('kab_kota_asal_id')) {
+                                    $set('kab_kota_tujuan_id', null);
+                                }
+                            })
+                            ->rules(['different:kab_kota_asal_id'])
+                            ->validationMessages([
+                                'different' => 'Kab/Kota tujuan tidak boleh sama dengan asal.',
+                            ]),
+
+                        Forms\Components\TextInput::make('pelabuhan_tujuan')
+                            ->label('Nama Pelabuhan Tujuan')
+                            ->required(),
+                    ])->columns(),
+
+                Forms\Components\Section::make('Informasi Ternak')
+                    ->schema([
+                        Forms\Components\Select::make('kategori_ternak_id')
+                            ->label('Kategori Ternak')
+                            ->relationship('kategoriTernak', 'nama')
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(fn(callable $set) => $set('jenis_ternak_id', null)),
+
+                        Forms\Components\Select::make('jenis_ternak_id')
+                            ->label('Jenis Ternak')
+                            ->options(fn(callable $get) => JenisTernak::where('kategori_ternak_id', $get('kategori_ternak_id'))->pluck('nama', 'id'))
                             ->searchable()
                             ->preload()
                             ->required()
                             ->live(),
 
-                        Forms\Components\TextInput::make('pelabuhan_tujuan')
-                            ->label('Nama Pelabuhan Tujuan')
-                            ->required(),
-                    ]),
-
-                Forms\Components\Section::make('Informasi Ternak')
-                    ->schema([
-                        Forms\Components\Select::make('jenis_ternak_id')
-                            ->label('Jenis Ternak')
-                            ->options(fn(callable $get) => \App\Models\JenisTernak::where('kategori_ternak_id', $get('kategori_ternak_id'))->pluck('nama', 'id'))
-                            ->searchable()
-                            ->preload()
+                        Forms\Components\Select::make('jenis_kelamin')
+                            ->label('Jenis Kelamin')
+                            ->options([
+                                'jantan' => 'Jantan',
+                                'betina' => 'Betina',
+                            ])
                             ->required()
                             ->live(),
 
@@ -126,27 +156,54 @@ class PengajuanResource extends Resource
                             ->numeric()
                             ->minValue(1)
                             ->maxValue(
-                                fn(callable $get) =>
-                                \App\Models\Kuota::where('tahun', $get('tahun_pengajuan'))
-                                    ->where('jenis_ternak_id', $get('jenis_ternak_id'))
-                                    ->where('kab_kota_id', $get('kab_kota_tujuan_id'))
-                                    ->where('jenis_kelamin', $get('jenis_kelamin'))
-                                    ->value('kuota') ?? 0
+                                fn(callable $get) => $cekKuotaTersedia($get)['kuota']
                             )
                             ->helperText(
-                                fn(callable $get) =>
-                                'Kuota: ' . (\App\Models\Kuota::where('tahun', $get('tahun_pengajuan'))
-                                    ->where('jenis_ternak_id', $get('jenis_ternak_id'))
-                                    ->where('kab_kota_id', $get('kab_kota_tujuan_id'))
-                                    ->where('jenis_kelamin', $get('jenis_kelamin'))
-                                    ->value('kuota') ?? 0)
+                                fn(callable $get) => 'Kuota tersedia: ' . $cekKuotaTersedia($get)['kuota'] . ' (Pemasukan: ' . $cekKuotaTersedia($get)['pemasukan'] . ', Pengeluaran: ' . $cekKuotaTersedia($get)['pengeluaran'] . ')'
                             )
                             ->required()
-                            ->reactive(),
-                    ]),
+                            ->reactive()
+                            ->columnSpanFull(),
+                    ])->columns(),
 
-                Forms\Components\Hidden::make('jenis_pengajuan')
-                    ->default('antar_kab_kota'),
+                Forms\Components\Section::make('Dokumen')
+                    ->schema([
+                        Forms\Components\FileUpload::make('surat_permohonan')
+                            ->label('Surat Permohonan Perusahaan')
+                            ->disk('public')
+                            ->directory('pengajuan/surat_permohonan')
+                            ->acceptedFileTypes(['application/pdf']),
+
+                        Forms\Components\TextInput::make('nomor_surat_permohonan')
+                            ->label('Nomor Surat Permohonan Perusahaan')
+                            ->required(),
+
+                        Forms\Components\DatePicker::make('tanggal_surat_permohonan')
+                            ->label('Tanggal Surat Permohonan Perusahaan')
+                            ->required(),
+
+                        Forms\Components\FileUpload::make('skkh')
+                            ->label('SKKH')
+                            ->disk('public')
+                            ->directory('pengajuan/skkh')
+                            ->acceptedFileTypes(['application/pdf']),
+
+                        Forms\Components\TextInput::make('nomor_skkh')
+                            ->label('No. SKKH')
+                            ->required(),
+
+                        Forms\Components\FileUpload::make('hasil_uji_lab')
+                            ->label('Hasil Uji Lab')
+                            ->disk('public')
+                            ->directory('pengajuan/hasil_uji_lab')
+                            ->acceptedFileTypes(['application/pdf']),
+
+                        Forms\Components\FileUpload::make('dokumen_lainnya')
+                            ->label('Dokumen Lainnya (Jika Ada)')
+                            ->disk('public')
+                            ->directory('pengajuan/dokumen_lainnya')
+                            ->acceptedFileTypes(['application/pdf']),
+                    ]),
             ]);
     }
 
@@ -170,17 +227,19 @@ class PengajuanResource extends Resource
                     ->label('Jumlah'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'pending' => 'gray',
-                        'approved' => 'success',
-                        'rejected' => 'danger',
+                    ->color(fn($state) => match ($state) {
+                        'menunggu' => 'gray',
+                        'disetujui' => 'success',
+                        'ditolak' => 'danger',
+                        'diproses' => 'warning',
+                        'selesai' => 'success',
                     }),
             ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ViewAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -192,16 +251,24 @@ class PengajuanResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            \App\Filament\Resources\PengajuanResource\RelationManagers\HistoriPengajuanRelationManager::class,
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListPengajuans::route('/'),
+            'index' => Pages\ListPengajuan::route('/'),
             'create' => Pages\CreatePengajuan::route('/create'),
+            'view' => Pages\ViewPengajuan::route('/{record}'),
             'edit' => Pages\EditPengajuan::route('/{record}/edit'),
         ];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $user = auth()->user();
+        $count = PengajuanService::countPerluDitindaklanjutiFor($user, 'antar_kab_kota');
+        return $count > 0 ? (string) $count : null;
     }
 }

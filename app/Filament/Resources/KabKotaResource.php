@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\KabKotaResource\Pages;
 use App\Filament\Resources\KabKotaResource\RelationManagers;
-use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\KabKota;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -16,15 +15,13 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class KabKotaResource extends Resource
 {
-    use HasAdminOnlyAccess;
-
     protected static ?string $model = KabKota::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
     protected static ?string $navigationGroup = 'Master Data';
     protected static ?int $navigationSort = 2;
     protected static ?string $modelLabel = 'Kabupaten/Kota';
-    protected static ?string $pluralModelLabel = 'Kabupaten/Kota';
+    protected static ?string $slug = 'kab-kota';
 
     public static function form(Form $form): Form
     {
@@ -32,7 +29,9 @@ class KabKotaResource extends Resource
             ->schema([
                 Forms\Components\Select::make('provinsi_id')
                     ->relationship('provinsi', 'nama')
-                    ->required(),
+                    ->required()
+                    ->searchable()
+                    ->preload(),
                 Forms\Components\TextInput::make('nama')
                     ->required()
                     ->maxLength(255),
@@ -44,13 +43,9 @@ class KabKotaResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('provinsi.nama')
-                    ->sortable()
-                    ->searchable(),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('nama')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('users_count')
-                    ->counts('users')
-                    ->label('Jumlah User'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -74,19 +69,10 @@ class KabKotaResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListKabKotas::route('/'),
-            'create' => Pages\CreateKabKota::route('/create'),
-            'edit' => Pages\EditKabKota::route('/{record}/edit'),
+            'index' => Pages\ManageKabKota::route('/'),
         ];
     }
 }

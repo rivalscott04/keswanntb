@@ -3,9 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\KabKota;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class UserSeeder extends Seeder
 {
@@ -20,10 +21,8 @@ class UserSeeder extends Seeder
             'email' => 'admin@example.com',
             'password' => Hash::make('password'),
             'wewenang_id' => 1,
-            'bidang_id' => 1,
-            'kab_kota_id' => 1,
             'no_hp' => '081234567890',
-            'alamat' => 'Jl. Admin No. 1',
+            'alamat' => 'Jl. Airlangga No. 56',
             'is_admin' => true,
         ]);
 
@@ -35,20 +34,26 @@ class UserSeeder extends Seeder
             'wewenang_id' => 2,
             'bidang_id' => 1,
             'no_hp' => '081234567891',
-            'alamat' => 'Jl. Disnak Provinsi No. 1',
+            'alamat' => 'Jl. Airlangga No. 56',
         ]);
 
-        // Disnak Kab/Kota user
-        User::create([
-            'name' => 'Disnak Kab/Kota',
-            'email' => 'disnakkabkota@example.com',
-            'password' => Hash::make('password'),
-            'wewenang_id' => 3,
-            'bidang_id' => 1,
-            'kab_kota_id' => 2,
-            'no_hp' => '081234567892',
-            'alamat' => 'Jl. Disnak Kab/Kota No. 1',
-        ]);
+        $kabKotas = KabKota::take(10)->get();
+
+        foreach ($kabKotas as $kabKota) {
+            // Buat verifikator untuk kabupaten/kota
+            User::create([
+                'name' => $kabKota->nama,
+                'email' => strtolower(str_replace([' ', '.', 'Kab', 'Kota'], '', $kabKota->nama) . (str_contains($kabKota->nama, 'Kab') ? 'kab' : 'kota')) . '@example.com',
+                'password' => Hash::make('password'),
+                'wewenang_id' => 3,
+                'kab_kota_id' => $kabKota->id,
+                'is_admin' => false,
+                'is_pernah_daftar' => true,
+                'status' => 1,
+                'jenis_akun' => 'disnak',
+                'alamat' => $kabKota->nama,
+            ]);
+        }
 
         // DPMPTSP user
         User::create([
@@ -57,7 +62,7 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'wewenang_id' => 4,
             'no_hp' => '081234567893',
-            'alamat' => 'Jl. DPMPTSP No. 1',
+            'alamat' => 'Jl. Udayana No. 4',
         ]);
 
         // Regular user

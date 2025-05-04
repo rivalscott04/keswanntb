@@ -28,4 +28,4 @@ class KabKotaSeeder extends Seeder
         KabKota::create(['nama' => 'Kab. Bima', 'provinsi_id' => $ntb->id]);
         KabKota::create(['nama' => 'Kota Bima', 'provinsi_id' => $ntb->id]);
     }
-} 
+}

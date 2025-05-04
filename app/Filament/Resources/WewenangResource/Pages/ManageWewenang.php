@@ -4,16 +4,17 @@ namespace App\Filament\Resources\WewenangResource\Pages;
 
 use App\Filament\Resources\WewenangResource;
 use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Resources\Pages\ManageRecords;
 
-class ListWewenangs extends ListRecords
+class ManageWewenang extends ManageRecords
 {
     protected static string $resource = WewenangResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->modalWidth('2xl'),
         ];
     }
 }

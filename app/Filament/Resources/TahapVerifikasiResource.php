@@ -12,19 +12,16 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Traits\HasAdminOnlyAccess;
 
 class TahapVerifikasiResource extends Resource
 {
-    use HasAdminOnlyAccess;
-
     protected static ?string $model = TahapVerifikasi::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-check-badge';
-    protected static ?string $navigationGroup = 'Master Data';
-    protected static ?int $navigationSort = 7;
+    protected static ?string $navigationGroup = 'Pengaturan';
+    protected static ?int $navigationSort = 5;
     protected static ?string $modelLabel = 'Tahap Verifikasi';
-    protected static ?string $pluralModelLabel = 'Tahap Verifikasi';
+    protected static ?string $slug = 'tahap-verifikasi';
 
     public static function form(Form $form): Form
     {
@@ -35,8 +32,7 @@ class TahapVerifikasiResource extends Resource
                     ->maxLength(255),
                 Forms\Components\TextInput::make('urutan')
                     ->required()
-                    ->numeric()
-                    ->minValue(1),
+                    ->numeric(),
             ]);
     }
 
@@ -44,13 +40,11 @@ class TahapVerifikasiResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('urutan')
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('nama')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('pengajuans_count')
-                    ->counts('pengajuans')
-                    ->label('Jumlah Pengajuan'),
+                Tables\Columns\TextColumn::make('urutan')
+                    ->numeric()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -60,7 +54,6 @@ class TahapVerifikasiResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('urutan')
             ->filters([
                 //
             ])
@@ -75,19 +68,10 @@ class TahapVerifikasiResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListTahapVerifikasis::route('/'),
-            'create' => Pages\CreateTahapVerifikasi::route('/create'),
-            'edit' => Pages\EditTahapVerifikasi::route('/{record}/edit'),
+            'index' => Pages\ManageTahapVerifikasi::route('/'),
         ];
     }
 }

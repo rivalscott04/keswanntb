@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PengaturanResource\Pages;
-use App\Filament\Resources\PengaturanResource\RelationManagers;
 use App\Filament\Traits\HasAdminOnlyAccess;
 use App\Models\Pengaturan;
 use Filament\Forms;
@@ -11,8 +10,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PengaturanResource extends Resource
 {
@@ -23,6 +20,7 @@ class PengaturanResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationGroup = 'Pengaturan';
     protected static ?int $navigationSort = 1;
+    protected static ?string $slug = 'pengaturan';
 
     public static function form(Form $form): Form
     {

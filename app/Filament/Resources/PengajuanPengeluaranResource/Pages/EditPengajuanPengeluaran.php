@@ -13,7 +13,12 @@ class EditPengajuanPengeluaran extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()->visible(fn($record) => in_array($record->status, ['menunggu', 'ditolak'])),
         ];
     }
-} 
+
+    public function getRelationManagers(): array
+    {
+        return [];
+    }
+}

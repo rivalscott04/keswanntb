@@ -20,4 +20,4 @@ class TahapVerifikasiSeeder extends Seeder
         TahapVerifikasi::create(['nama' => 'Disnak Provinsi', 'urutan' => 4]);
         TahapVerifikasi::create(['nama' => 'DPMPTSP', 'urutan' => 5]);
     }
-} 
+}

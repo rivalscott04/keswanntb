@@ -4,16 +4,17 @@ namespace App\Filament\Resources\ProvinsiResource\Pages;
 
 use App\Filament\Resources\ProvinsiResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Resources\Pages\ManageRecords;
 
-class EditProvinsi extends EditRecord
+class ManageProvinsi extends ManageRecords
 {
     protected static string $resource = ProvinsiResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\CreateAction::make()
+                ->modalWidth('2xl'),
         ];
     }
 }

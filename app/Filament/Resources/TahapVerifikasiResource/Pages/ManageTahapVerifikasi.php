@@ -4,16 +4,16 @@ namespace App\Filament\Resources\TahapVerifikasiResource\Pages;
 
 use App\Filament\Resources\TahapVerifikasiResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Resources\Pages\ManageRecords;
 
-class EditTahapVerifikasi extends EditRecord
+class ManageTahapVerifikasi extends ManageRecords
 {
     protected static string $resource = TahapVerifikasiResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\CreateAction::make(),
         ];
     }
 }

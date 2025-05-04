@@ -4,9 +4,9 @@ namespace App\Filament\Resources\JenisTernakResource\Pages;
 
 use App\Filament\Resources\JenisTernakResource;
 use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Resources\Pages\ManageRecords;
 
-class ListJenisTernaks extends ListRecords
+class ManageJenisTernaks extends ManageRecords
 {
     protected static string $resource = JenisTernakResource::class;
 

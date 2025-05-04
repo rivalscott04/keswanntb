@@ -16,8 +16,8 @@ class KategoriTernak extends Model
         'nama',
     ];
 
-    public function jenisTernaks(): HasMany
+    public function jenisTernak(): HasMany
     {
-        return $this->hasMany(JenisTernak::class);
+        return $this->hasMany(JenisTernak::class, 'kategori_ternak_id');
     }
 }
