@@ -12,9 +12,12 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Traits\HasNavigationVisibility;
 
 class KabKotaResource extends Resource
 {
+    use HasNavigationVisibility;
+
     protected static ?string $model = KabKota::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
@@ -74,5 +77,10 @@ class KabKotaResource extends Resource
         return [
             'index' => Pages\ManageKabKota::route('/'),
         ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()->wewenang->nama === 'Administrator';
     }
 }

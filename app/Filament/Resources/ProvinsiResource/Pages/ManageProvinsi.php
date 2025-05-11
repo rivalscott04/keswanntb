@@ -17,4 +17,9 @@ class ManageProvinsi extends ManageRecords
                 ->modalWidth('2xl'),
         ];
     }
+
+    public function mount(): void
+    {
+        abort_unless(auth()->user()->wewenang->nama === 'Administrator', 403);
+    }
 }

@@ -11,6 +11,7 @@ use Filament\Resources\Resource;
 use App\Services\PengajuanService;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\PengajuanPengeluaranResource\Pages;
+use App\Filament\Components\UnverifiedAccountNotification;
 
 class PengajuanPengeluaranResource extends Resource
 {
@@ -223,5 +224,23 @@ class PengajuanPengeluaranResource extends Resource
     {
         $count = PengajuanService::countPerluDitindaklanjutiFor(auth()->user(), 'pengeluaran');
         return $count > 0 ? (string) $count : null;
+    }
+
+    public static function shouldCheckAccess(): bool
+    {
+        $user = auth()->user();
+        
+        if (!$user->account_verified_at) {
+            UnverifiedAccountNotification::make()->send();
+            return false;
+        }
+
+        return true;
+    }
+
+    public static function canCreate(): bool
+    {
+        $user = auth()->user();
+        return $user->wewenang->nama === 'Pengguna' && $user->account_verified_at !== null;
     }
 }

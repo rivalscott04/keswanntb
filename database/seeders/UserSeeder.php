@@ -74,6 +74,8 @@ class UserSeeder extends Seeder
             'kab_kota_id' => 3,
             'no_hp' => '081234567894',
             'alamat' => 'Jl. Pengusaha No. 1',
+            'account_verified_at' => now(),
+            'account_verified_by' => 1,
         ]);
     }
 }

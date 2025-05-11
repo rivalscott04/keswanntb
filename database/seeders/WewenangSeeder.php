@@ -9,10 +9,10 @@ class WewenangSeeder extends Seeder
 {
     public function run(): void
     {
-        Wewenang::create(['nama' => 'admin']);
+        Wewenang::create(['nama' => 'Administrator']);
         Wewenang::create(['nama' => 'Disnak Provinsi']);
         Wewenang::create(['nama' => 'Disnak Kab/Kota']);
         Wewenang::create(['nama' => 'DPMPTSP']);
-        Wewenang::create(['nama' => 'biasa']);
+        Wewenang::create(['nama' => 'Pengguna']);
     }
 } 

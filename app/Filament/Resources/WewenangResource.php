@@ -12,9 +12,12 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Traits\HasNavigationVisibility;
 
 class WewenangResource extends Resource
 {
+    use HasNavigationVisibility;
+
     protected static ?string $model = Wewenang::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-key';
@@ -69,5 +72,10 @@ class WewenangResource extends Resource
         return [
             'index' => Pages\ManageWewenang::route('/'),
         ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()->wewenang->nama === 'Administrator';
     }
 }

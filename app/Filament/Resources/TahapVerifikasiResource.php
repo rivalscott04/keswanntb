@@ -12,9 +12,14 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Traits\HasNavigationVisibility;
+use App\Filament\Traits\HasAdminOnlyAccess;
 
 class TahapVerifikasiResource extends Resource
 {
+    use HasNavigationVisibility;
+    use HasAdminOnlyAccess;
+
     protected static ?string $model = TahapVerifikasi::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-check-badge';
@@ -73,5 +78,10 @@ class TahapVerifikasiResource extends Resource
         return [
             'index' => Pages\ManageTahapVerifikasi::route('/'),
         ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()->wewenang->nama === 'Administrator';
     }
 }

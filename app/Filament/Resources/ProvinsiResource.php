@@ -12,9 +12,14 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Traits\HasNavigationVisibility;
+use App\Filament\Traits\HasAdminOnlyAccess;
 
 class ProvinsiResource extends Resource
 {
+    use HasNavigationVisibility;
+    use HasAdminOnlyAccess;
+
     protected static ?string $model = Provinsi::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-map';
@@ -68,5 +73,10 @@ class ProvinsiResource extends Resource
         return [
             'index' => Pages\ManageProvinsi::route('/'),
         ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()->wewenang->nama === 'Administrator';
     }
 }

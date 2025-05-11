@@ -19,7 +19,7 @@ class ListPengajuan extends ListRecords
     protected function getHeaderActions(): array
     {
         $user = auth()->user();
-        if ($user->is_admin || $user->wewenang->nama === 'biasa' || $user->wewenang->nama === 'Pengusaha') {
+        if ($user->is_admin || $user->wewenang->nama === 'Pengguna') {
             return [
                 Actions\CreateAction::make(),
             ];
@@ -32,7 +32,7 @@ class ListPengajuan extends ListRecords
         $user = auth()->user();
         $query = parent::getTableQuery();
 
-        if ($user->wewenang->nama === 'biasa' || $user->wewenang->nama === 'Pengusaha') {
+        if ($user->wewenang->nama === 'Pengguna') {
             // Pengusaha hanya melihat pengajuan miliknya
             return $query->where('user_id', $user->id);
         }

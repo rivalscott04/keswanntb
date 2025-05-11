@@ -12,9 +12,12 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Traits\HasNavigationVisibility;
 
 class BidangResource extends Resource
 {
+    use HasNavigationVisibility;
+
     protected static ?string $model = Bidang::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';
@@ -68,5 +71,10 @@ class BidangResource extends Resource
         return [
             'index' => Pages\ManageBidang::route('/'),
         ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()->wewenang->nama === 'Administrator';
     }
 }

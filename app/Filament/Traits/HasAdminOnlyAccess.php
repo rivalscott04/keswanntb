@@ -7,23 +7,13 @@ use Illuminate\Support\Facades\Auth;
 
 trait HasAdminOnlyAccess
 {
-    public static function canViewAny(): bool
+    public function mount(): void
     {
-        return Auth::check() && Auth::user()->is_admin;
+        abort_unless(auth()->user()->wewenang->nama === 'Administrator', 403);
     }
 
-    public static function canCreate(): bool
+    public static function shouldRegisterNavigation(): bool
     {
-        return Auth::check() && Auth::user()->is_admin;
+        return auth()->user()->wewenang->nama === 'Administrator';
     }
-
-    public static function canEdit(Model $record): bool
-    {
-        return Auth::check() && Auth::user()->is_admin;
-    }
-
-    public static function canDelete(Model $record): bool
-    {
-        return Auth::check() && Auth::user()->is_admin;
-    }
-} 
+}

@@ -2,15 +2,17 @@
 
 namespace App\Filament\Pages\Auth;
 
-use Filament\Pages\Auth\Register as BaseRegister;
 use Filament\Forms;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use App\Models\KabKota;
+use App\Models\Wewenang;
+use Filament\Forms\Form;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Storage;
 use Filament\Notifications\Notification;
-use Filament\Forms\Form;
+use Filament\Pages\Auth\Register as BaseRegister;
 
 class Register extends BaseRegister
 {
@@ -69,6 +71,8 @@ class Register extends BaseRegister
                                     ->acceptedFileTypes(['application/pdf']),
                                 Forms\Components\TextInput::make('no_npwp')
                                     ->label('Nomor NPWP'),
+                                Forms\Components\TextInput::make('telepon')
+                                    ->label('Telepon/HP/Faximile'),
                                 Forms\Components\FileUpload::make('surat_tanda_daftar')
                                     ->label('Tanda Daftar Perusahaan')
                                     ->acceptedFileTypes(['application/pdf']),
@@ -89,13 +93,14 @@ class Register extends BaseRegister
                                 Forms\Components\TextInput::make('name')
                                     ->label('Nama')
                                     ->required(),
-                                Forms\Components\TextInput::make('email')
-                                    ->label('Email')
-                                    ->email()
-                                    ->required(),
                                 Forms\Components\TextInput::make('nik')
                                     ->label('NIK')
                                     ->required(),
+                                Forms\Components\TextInput::make('email')
+                                    ->label('Email')
+                                    ->email()
+                                    ->required()
+                                    ->columnSpanFull(),
                                 Forms\Components\TextInput::make('password')
                                     ->label('Password')
                                     ->password()
@@ -104,14 +109,18 @@ class Register extends BaseRegister
                                     ->label('Ulangi Password')
                                     ->password()
                                     ->required(),
+                                Forms\Components\Select::make('kab_kota_id')
+                                    ->label('Kabupaten/Kota')
+                                    ->options(KabKota::all()->pluck('nama', 'id'))
+                                    ->required(),
                                 Forms\Components\TextInput::make('desa')
                                     ->label('Desa')
                                     ->required(),
                                 Forms\Components\TextInput::make('alamat')
                                     ->label('Alamat')
                                     ->required(),
-                                Forms\Components\TextInput::make('telepon')
-                                    ->label('Telepon/HP/Faximile')
+                                Forms\Components\TextInput::make('no_hp')
+                                    ->label('Nomor HP')
                                     ->required(),
                             ])->columns(),
                         Forms\Components\Section::make('Dokumen Pendukung')
@@ -127,6 +136,7 @@ class Register extends BaseRegister
 
     protected function handleRegistration(array $data): User
     {
+        $data['wewenang_id'] = Wewenang::where('nama', 'Pengguna')->first()->id;
         $data['password'] = Hash::make($data['password']);
         unset($data['password_confirmation']);
         if (App::environment('local')) {
@@ -139,7 +149,7 @@ class Register extends BaseRegister
         Notification::make()
             ->title('Pendaftaran berhasil!')
             ->success()
-            ->body('Silakan login menggunakan email dan password Anda.')
+            ->body('Silakan menunggu persetujuan akun Anda.')
             ->send();
         return $user;
     }

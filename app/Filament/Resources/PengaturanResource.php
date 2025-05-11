@@ -28,11 +28,23 @@ class PengaturanResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('key')
                     ->required()
-                    ->maxLength(255),
-                Forms\Components\Textarea::make('value')
+                    ->maxLength(255)
+                    ->columnSpanFull()
+                    ->unique(ignoreRecord: true),
+                Forms\Components\KeyValue::make('value')
                     ->required()
-                    ->maxLength(65535)
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->reorderable()
+                    ->addActionLabel('Tambah Field')
+                    ->keyLabel('Nama Field')
+                    ->valueLabel('Nilai')
+                    ->default([])
+                    ->afterStateHydrated(function ($component, $state) {
+                        if (is_string($state)) {
+                            $component->state(json_decode($state, true) ?? []);
+                        }
+                    })
+                    ->dehydrateStateUsing(fn($state) => json_encode($state)),
             ]);
     }
 
@@ -43,7 +55,18 @@ class PengaturanResource extends Resource
                 Tables\Columns\TextColumn::make('key')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('value')
-                    ->searchable()
+                    ->formatStateUsing(function ($state) {
+                        if (is_string($state)) {
+                            $data = json_decode($state, true);
+                            if (is_array($data)) {
+                                return collect($data)->map(function ($value, $key) {
+                                    return "{$key}: {$value}";
+                                })->join(', ');
+                            }
+                        }
+                        return $state;
+                    })
+                    ->wrap()
                     ->limit(50),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -82,5 +105,10 @@ class PengaturanResource extends Resource
             'create' => Pages\CreatePengaturan::route('/create'),
             'edit' => Pages\EditPengaturan::route('/{record}/edit'),
         ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()->wewenang->nama === 'Administrator';
     }
 }

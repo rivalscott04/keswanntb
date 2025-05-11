@@ -18,6 +18,8 @@ return new class extends Migration {
             $table->text('alamat')->nullable();
             $table->string('desa')->nullable();
             $table->boolean('is_admin')->default(false);
+            $table->timestamp('account_verified_at')->nullable();
+            $table->foreignId('account_verified_by')->nullable()->constrained('users')->onDelete('set null');
         });
     }
 
