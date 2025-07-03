@@ -247,10 +247,19 @@ class ViewSp3 extends ViewRecord
 
                     $biodataKadis = json_decode(Pengaturan::firstWhere('key', 'biodata_kadis')->value);
 
+                    $bidangUsaha = match ($this->record->bidang_usaha) {
+                        'hewan_ternak' => 'Hewan Ternak',
+                        'hewan_kesayangan' => 'Hewan Kesayangan',
+                        'produk_hewan_produk_olahan' => 'Produk Hewan/Produk Olahan',
+                        'gabungan_di_antaranya' => 'Gabungan di Antaranya',
+                        default => '-'
+                    };
+
                     $template->setValues([
                         'nomor' => $this->record->no_sp3,
                         'nama_perusahaan' => $this->record->nama_perusahaan,
                         'penanggung_jawab' => $this->record->name,
+                        'bidang_usaha' => $bidangUsaha,
                         'nomor_surat_izin_usaha' => $this->record->no_surat_izin_usaha,
                         'nomor_tanda_daftar_perusahaan' => $this->record->no_surat_tanda_daftar,
                         'nomor_npwp' => $this->record->no_npwp,

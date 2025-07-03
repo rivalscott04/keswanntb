@@ -51,6 +51,20 @@ class Register extends BaseRegister
                                     ->required()
                                     ->live(),
                             ]),
+                        Forms\Components\Section::make('Bidang Usaha')
+                            ->schema([
+                                Forms\Components\Select::make('bidang_usaha')
+                                    ->label('Bidang Usaha (Komoditas)')
+                                    ->options([
+                                        'hewan_ternak' => 'Hewan Ternak',
+                                        'hewan_kesayangan' => 'Hewan Kesayangan',
+                                        'produk_hewan_produk_olahan' => 'Produk Hewan/Produk Olahan',
+                                        'gabungan_di_antaranya' => 'Gabungan di Antaranya',
+                                    ])
+                                    ->required()
+                                    ->placeholder('Pilih bidang usaha')
+                                    ->helperText('Pilih klasifikasi bidang usaha berdasarkan komoditas yang akan dikelola'),
+                            ]),
                         Forms\Components\Section::make('Data Perusahaan/Instansi')
                             ->schema([
                                 Forms\Components\TextInput::make('nama_perusahaan')
