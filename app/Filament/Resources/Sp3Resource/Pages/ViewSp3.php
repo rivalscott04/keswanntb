@@ -73,6 +73,15 @@ class ViewSp3 extends ViewRecord
                             ->schema([
                                 TextEntry::make('nama_perusahaan')
                                     ->label('Nama Perusahaan/Instansi'),
+                                TextEntry::make('bidang_usaha')
+                                    ->label('Bidang Usaha')
+                                    ->formatStateUsing(fn($state) => match ($state) {
+                                        'hewan_ternak' => 'Hewan Ternak',
+                                        'hewan_kesayangan' => 'Hewan Kesayangan',
+                                        'produk_hewan_produk_olahan' => 'Produk Hewan/Produk Olahan',
+                                        'gabungan_di_antaranya' => 'Gabungan di Antaranya',
+                                        default => '-'
+                                    }),
                                 TextEntry::make('akta_pendirian')
                                     ->label('Akta Pendirian')
                                     ->formatStateUsing(function ($state) {
