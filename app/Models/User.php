@@ -67,6 +67,11 @@ class User extends Authenticatable
         return $this->hasMany(Pengajuan::class);
     }
 
+    public function sp3s()
+    {
+        return $this->hasMany(Sp3::class);
+    }
+
     public function verifiedBy()
     {
         return $this->belongsTo(User::class, 'account_verified_by');

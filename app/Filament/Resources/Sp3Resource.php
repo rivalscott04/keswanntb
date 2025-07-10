@@ -2,22 +2,25 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\User;
-use Filament\Tables;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
-use Filament\Resources\Resource;
-use Filament\Tables\Filters\Filter;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Eloquent\Model;
-use Filament\Tables\Filters\SelectFilter;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\Sp3Resource\Pages;
+use App\Filament\Resources\Sp3Resource\RelationManagers;
+use App\Models\Sp3;
+use App\Models\User;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\Filter;
 
 class Sp3Resource extends Resource
 {
-    protected static ?string $model = User::class;
+    protected static ?string $model = Sp3::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
@@ -29,17 +32,17 @@ class Sp3Resource extends Resource
 
     public static function canViewAny(): bool
     {
-        return Auth::check() && Auth::user()->is_admin;
+        return Auth::check();
     }
 
     public static function canCreate(): bool
     {
-        return Auth::check() && Auth::user()->is_admin;
+        return Auth::check() && !Auth::user()->is_admin;
     }
 
     public static function canEdit(Model $record): bool
     {
-        return Auth::check() && Auth::user()->is_admin;
+        return Auth::check() && (Auth::user()->is_admin || $record->user_id === Auth::id());
     }
 
     public static function canDelete(Model $record): bool
@@ -49,24 +52,102 @@ class Sp3Resource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->whereHas('wewenang', function ($query) {
-                $query->where('nama', 'Pengguna');
-            });
+        if (Auth::user()->is_admin) {
+            return parent::getEloquentQuery();
+        }
+        
+        return parent::getEloquentQuery()->where('user_id', Auth::id());
+    }
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Data Perusahaan')
+                    ->schema([
+                        Forms\Components\Select::make('jenis_akun')
+                            ->label('Jenis Akun')
+                            ->options([
+                                'perusahaan' => 'Perusahaan',
+                                'perorangan' => 'Perorangan/Instansi Pemerintah',
+                            ])
+                            ->required()
+                            ->reactive()
+                            ->columnSpanFull(),
+                        
+                        Forms\Components\TextInput::make('nama_perusahaan')
+                            ->label('Nama Perusahaan/Instansi')
+                            ->required()
+                            ->visible(fn ($get) => $get('jenis_akun') === 'perusahaan'),
+                        
+                        Forms\Components\Select::make('bidang_usaha')
+                            ->label('Bidang Usaha')
+                            ->options([
+                                'hewan_ternak' => 'Hewan Ternak',
+                                'hewan_kesayangan' => 'Hewan Kesayangan',
+                                'produk_hewan_produk_olahan' => 'Produk Hewan/Produk Olahan',
+                                'gabungan_di_antaranya' => 'Gabungan di Antaranya',
+                            ])
+                            ->required()
+                            ->visible(fn ($get) => $get('jenis_akun') === 'perusahaan'),
+                        
+                        Forms\Components\FileUpload::make('akta_pendirian')
+                            ->label('Akta Pendirian')
+                            ->directory('sp3/akta_pendirian')
+                            ->visible(fn ($get) => $get('jenis_akun') === 'perusahaan'),
+                        
+                        Forms\Components\FileUpload::make('surat_domisili')
+                            ->label('Surat Domisili')
+                            ->directory('sp3/surat_domisili')
+                            ->visible(fn ($get) => $get('jenis_akun') === 'perusahaan'),
+                        
+                        Forms\Components\TextInput::make('no_nib')
+                            ->label('Nomor NIB')
+                            ->visible(fn ($get) => $get('jenis_akun') === 'perusahaan'),
+                        
+                        Forms\Components\FileUpload::make('nib')
+                            ->label('NIB (Nomor Induk Berusaha)')
+                            ->directory('sp3/nib')
+                            ->visible(fn ($get) => $get('jenis_akun') === 'perusahaan'),
+                        
+                        Forms\Components\TextInput::make('no_npwp')
+                            ->label('Nomor NPWP')
+                            ->visible(fn ($get) => $get('jenis_akun') === 'perusahaan'),
+                        
+                        Forms\Components\FileUpload::make('npwp')
+                            ->label('NPWP')
+                            ->directory('sp3/npwp')
+                            ->visible(fn ($get) => $get('jenis_akun') === 'perusahaan'),
+                        
+                        // Forms\Components\FileUpload::make('rekomendasi_keswan')
+                        //     ->label('Rekomendasi Kab/Kota')
+                        //     ->directory('sp3/rekomendasi_keswan')
+                        //     ->required(),
+                        
+                        // Forms\Components\FileUpload::make('surat_kandang_penampungan')
+                        //     ->label('Surat Keterangan Mempunyai Kandang Penampungan')
+                        //     ->directory('sp3/surat_kandang_penampungan')
+                        //     ->required(),
+                        
+                        // Forms\Components\FileUpload::make('surat_permohonan_perusahaan')
+                        //     ->label('Surat Permohonan Perusahaan')
+                        //     ->directory('sp3/surat_permohonan_perusahaan')
+                        //     ->required(),
+                        
+                        Forms\Components\FileUpload::make('dokumen_pendukung')
+                            ->label('Dokumen Pendukung Lainnya')
+                            ->directory('sp3/dokumen_pendukung')
+                            ->columnSpanFull(),
+                    ])->columns(),
+            ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->label('Nama')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('email')
-                    ->label('Email')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('no_hp')
-                    ->label('No. HP')
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Nama Pemohon')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('nama_perusahaan')
                     ->label('Nama Perusahaan')
@@ -81,31 +162,65 @@ class Sp3Resource extends Resource
                         default => '-'
                     })
                     ->searchable(),
-                Tables\Columns\TextColumn::make('account_verified_at')
-                    ->label('Status Verifikasi')
-                    ->formatStateUsing(fn($state) => $state ? 'Terverifikasi' : 'Belum Terverifikasi')
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->formatStateUsing(fn($state) => match ($state) {
+                        'draft' => 'Draft',
+                        'submitted' => 'Terkirim',
+                        'verified_kabupaten' => 'Diverifikasi Kabupaten',
+                        'verified_provinsi' => 'Diverifikasi Provinsi',
+                        'approved' => 'Disetujui',
+                        'rejected' => 'Ditolak',
+                        default => '-'
+                    })
                     ->badge()
-                    ->color(fn($state) => $state ? 'success' : 'warning'),
-                Tables\Columns\TextColumn::make('account_verified_by')
-                    ->label('Diverifikasi Oleh')
-                    ->formatStateUsing(fn($state) => $state ? User::find($state)?->name : '-'),
+                    ->color(fn($state) => match ($state) {
+                        'draft' => 'gray',
+                        'submitted' => 'info',
+                        'verified_kabupaten' => 'warning',
+                        'verified_provinsi' => 'primary',
+                        'approved' => 'success',
+                        'rejected' => 'danger',
+                        default => 'gray'
+                    }),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Tanggal Pengajuan')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable(),
             ])
             ->filters([
-                Filter::make('unverified')
-                    ->label('Belum Terverifikasi')
-                    ->query(fn(Builder $query): Builder => $query->whereNull('account_verified_at'))
-                    ->default(),
+                SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        'draft' => 'Draft',
+                        'submitted' => 'Terkirim',
+                        'verified_kabupaten' => 'Diverifikasi Kabupaten',
+                        'verified_provinsi' => 'Diverifikasi Provinsi',
+                        'approved' => 'Disetujui',
+                        'rejected' => 'Ditolak',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn($record) => $record->status === 'draft'),
             ])
             ->bulkActions([]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\HistoriSp3RelationManager::class,
+        ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListSp3::route('/'),
+            'index' => Pages\ListSp3s::route('/'),
+            'create' => Pages\CreateSp3::route('/create'),
+            'edit' => Pages\EditSp3::route('/{record}/edit'),
             'view' => Pages\ViewSp3::route('/{record}'),
         ];
     }

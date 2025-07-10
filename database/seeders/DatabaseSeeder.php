@@ -22,6 +22,8 @@ class DatabaseSeeder extends Seeder
             JenisTernakSeeder::class,
             KuotaSeeder::class,
             PengaturanSeeder::class,
+            Sp3Seeder::class,
+            HistoriSp3Seeder::class,
         ]);
     }
 }

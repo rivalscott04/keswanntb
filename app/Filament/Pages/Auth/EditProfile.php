@@ -9,230 +9,113 @@ use Filament\Actions\Action;
 use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Hash;
+use App\Models\KabKota;
 
 class EditProfile extends BaseEditProfile
 {
+    public $old_password;
+    public $new_password;
+    public $new_password_confirmation;
+
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Grid::make(2)
-                    ->schema([
-                        Forms\Components\Section::make('Status Pendaftaran')
-                            ->schema([
-                                Forms\Components\Toggle::make('is_pernah_daftar')
-                                    ->label('Sudah Pernah Mendaftar?')
-                                    ->default(false)
-                                    ->live()
-                                    ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-                                Forms\Components\TextInput::make('no_sp3')
-                                    ->label('No. SP3')
-                                    ->visible(fn($get) => $get('is_pernah_daftar') && auth()->user()->wewenang->nama === 'Pengguna'),
-                                Forms\Components\TextInput::make('no_register')
-                                    ->label('Nomor Register')
-                                    ->visible(fn($get) => $get('is_pernah_daftar') && auth()->user()->wewenang->nama === 'Pengguna'),
-                                Forms\Components\FileUpload::make('sp3')
-                                    ->label('Dokumen SP3')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->visible(fn($get) => $get('is_pernah_daftar') && auth()->user()->wewenang->nama === 'Pengguna'),
-                            ])
-                            ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-
-                        Forms\Components\Section::make('Jenis Akun')
-                            ->schema([
-                                Forms\Components\Select::make('jenis_akun')
-                                    ->label('Jenis Akun')
-                                    ->options([
-                                        'perusahaan' => 'Perusahaan',
-                                        'perorangan' => 'Perorangan/Instansi Pemerintah',
-                                    ])
-                                    ->required()
-                                    ->live()
-                                    ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-                            ])
-                            ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-
-                        Forms\Components\Section::make('Bidang Usaha')
-                            ->schema([
-                                Forms\Components\Select::make('bidang_usaha')
-                                    ->label('Bidang Usaha (Komoditas)')
-                                    ->options([
-                                        'hewan_ternak' => 'Hewan Ternak',
-                                        'hewan_kesayangan' => 'Hewan Kesayangan',
-                                        'produk_hewan_produk_olahan' => 'Produk Hewan/Produk Olahan',
-                                        'gabungan_di_antaranya' => 'Gabungan di Antaranya',
-                                    ])
-                                    ->required()
-                                    ->placeholder('Pilih bidang usaha')
-                                    ->helperText('Pilih klasifikasi bidang usaha berdasarkan komoditas yang akan dikelola')
-                                    ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-                            ])
-                            ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-
-                        Forms\Components\Section::make('Data Perusahaan/Instansi')
-                            ->schema([
-                                Forms\Components\TextInput::make('nama_perusahaan')
-                                    ->label('Nama Perusahaan/Instansi'),
-                                Forms\Components\FileUpload::make('akta_pendirian')
-                                    ->label('Akta Pendirian')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->downloadable()
-                                    ->openable(),
-                                Forms\Components\FileUpload::make('surat_domisili')
-                                    ->label('Surat Domisili')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->downloadable()
-                                    ->openable(),
-                                Forms\Components\FileUpload::make('surat_izin_usaha')
-                                    ->label('Surat Izin Usaha')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->downloadable()
-                                    ->openable(),
-                                Forms\Components\TextInput::make('no_surat_izin_usaha')
-                                    ->label('Nomor Surat Izin Usaha'),
-                                Forms\Components\FileUpload::make('npwp')
-                                    ->label('NPWP')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->downloadable()
-                                    ->openable(),
-                                Forms\Components\TextInput::make('no_npwp')
-                                    ->label('Nomor NPWP'),
-                                Forms\Components\FileUpload::make('surat_tanda_daftar')
-                                    ->label('Tanda Daftar Perusahaan')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->downloadable()
-                                    ->openable(),
-                                Forms\Components\TextInput::make('no_surat_tanda_daftar')
-                                    ->label('Nomor Surat Tanda Daftar Perusahaan'),
-                                Forms\Components\FileUpload::make('rekomendasi_keswan')
-                                    ->label('Rekomendasi Kab/Kota')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->downloadable()
-                                    ->openable(),
-                                Forms\Components\FileUpload::make('surat_kandang_penampungan')
-                                    ->label('Surat Keterangan Mempunyai Kandang Penampungan')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->downloadable()
-                                    ->openable(),
-                                Forms\Components\FileUpload::make('surat_permohonan_perusahaan')
-                                    ->label('Surat Permohonan Perusahaan')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->downloadable()
-                                    ->openable(),
-                            ])
-                            ->visible(fn($get) => $get('jenis_akun') === 'perusahaan' && auth()->user()->wewenang->nama === 'Pengguna'),
-
-                        Forms\Components\Section::make('Data Pribadi')
-                            ->schema([
-                                Forms\Components\TextInput::make('name')
-                                    ->label('Nama')
-                                    ->required(),
-                                Forms\Components\TextInput::make('email')
-                                    ->label('Email')
-                                    ->email()
-                                    ->required()
-                                    ->unique(ignoreRecord: true),
-                                Forms\Components\TextInput::make('nik')
-                                    ->label('NIK')
-                                    ->required()
-                                    ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-                                Forms\Components\TextInput::make('password')
-                                    ->label('Password')
-                                    ->password()
-                                    ->dehydrated(fn($state) => filled($state))
-                                    ->dehydrateStateUsing(fn($state) => Hash::make($state)),
-                                Forms\Components\TextInput::make('password_confirmation')
-                                    ->label('Ulangi Password')
-                                    ->password()
-                                    ->same('password'),
-                                Forms\Components\TextInput::make('desa')
-                                    ->label('Desa')
-                                    ->required()
-                                    ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-                                Forms\Components\TextInput::make('alamat')
-                                    ->label('Alamat')
-                                    ->required()
-                                    ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-                                Forms\Components\TextInput::make('telepon')
-                                    ->label('Telepon/HP/Faximile')
-                                    ->required()
-                                    ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-                            ])
-                            ->columns()
-                            ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-
-                        Forms\Components\Section::make('Dokumen Pendukung')
-                            ->schema([
-                                Forms\Components\FileUpload::make('dokumen_pendukung')
-                                    ->label('Dokumen Pendukung Lainnya')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->downloadable()
-                                    ->openable(),
-                            ])
-                            ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-                    ])
-                    ->columnSpanFull()
-                    ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
-
-                Forms\Components\Section::make('Informasi Dasar')
+                Forms\Components\Section::make('Data Pribadi')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->label('Nama Lengkap')
                             ->required()
-                            ->visible(fn() => auth()->user()->wewenang->nama !== 'Pengguna'),
-
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('nik')
+                            ->label('NIK')
+                            ->required()
+                            ->maxLength(16)
+                            ->numeric()
+                            ->unique(ignoreRecord: true),
                         Forms\Components\TextInput::make('email')
                             ->label('Email')
                             ->email()
                             ->required()
-                            ->unique(ignoreRecord: true)
-                            ->visible(fn() => auth()->user()->wewenang->nama !== 'Pengguna'),
-
+                            ->maxLength(255)
+                            ->unique(ignoreRecord: true),
                         Forms\Components\TextInput::make('no_hp')
-                            ->label('No. Telepon')
+                            ->label('Nomor HP')
                             ->required()
-                            ->visible(fn() => auth()->user()->wewenang->nama !== 'Pengguna'),
-
-                        Forms\Components\TextInput::make('password')
-                            ->label('Password')
-                            ->password()
-                            ->dehydrated(fn($state) => filled($state))
-                            ->dehydrateStateUsing(fn($state) => Hash::make($state))
-                            ->visible(fn() => auth()->user()->wewenang->nama !== 'Pengguna'),
+                            ->maxLength(15)
+                            ->tel(),
+                        Forms\Components\Select::make('kab_kota_id')
+                            ->label('Kabupaten/Kota')
+                            ->options(KabKota::all()->pluck('nama', 'id'))
+                            ->required()
+                            ->searchable(),
+                        Forms\Components\TextInput::make('desa')
+                            ->label('Desa/Kelurahan')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\Textarea::make('alamat')
+                            ->label('Alamat Lengkap')
+                            ->required()
+                            ->maxLength(500)
+                            ->rows(3),
                     ])
-                    ->visible(fn() => auth()->user()->wewenang->nama !== 'Pengguna'),
+                    ->columns(2),
+                Forms\Components\Section::make('Ubah Password')
+                    ->description('Jika ingin mengubah password, silakan isi password lama dan password baru')
+                    ->schema([
+                        Forms\Components\TextInput::make('old_password')
+                            ->label('Password Lama')
+                            ->password()
+                            ->dehydrated(false),
+                        Forms\Components\TextInput::make('new_password')
+                            ->label('Password Baru')
+                            ->password()
+                            ->dehydrated(false),
+                        Forms\Components\TextInput::make('new_password_confirmation')
+                            ->label('Ulangi Password Baru')
+                            ->password()
+                            ->same('new_password')
+                            ->dehydrated(false),
+                    ]),
             ]);
+    }
+
+    public function mutateFormDataBeforeSave(array $data): array
+    {
+        // Handle password change
+        $oldPassword = $this->old_password;
+        $newPassword = $this->new_password;
+        $newPasswordConfirmation = $this->new_password_confirmation;
+
+        if ($newPassword) {
+            if (!Hash::check($oldPassword, Auth::user()->password)) {
+                Notification::make()
+                    ->title('Password lama salah!')
+                    ->danger()
+                    ->send();
+                unset($data['password']);
+            } elseif ($newPassword !== $newPasswordConfirmation) {
+                Notification::make()
+                    ->title('Konfirmasi password baru tidak cocok!')
+                    ->danger()
+                    ->send();
+                unset($data['password']);
+            } else {
+                $data['password'] = Hash::make($newPassword);
+            }
+        } else {
+            unset($data['password']);
+        }
+        return $data;
     }
 
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('deleteAccount')
-                ->label('Hapus Akun')
-                ->color('danger')
-                ->icon('heroicon-o-trash')
-                ->requiresConfirmation()
-                ->modalHeading('Hapus Akun')
-                ->modalDescription('Apakah Anda yakin ingin menghapus akun Anda? Tindakan ini tidak dapat dibatalkan.')
-                ->modalSubmitActionLabel('Ya, Hapus Akun')
-                ->modalCancelActionLabel('Batal')
-                ->action(function () {
-                    $user = Auth::user();
-
-                    // Logout the user
-                    Auth::logout();
-
-                    // Delete the user
-                    $user->delete();
-
-                    // Redirect to login page
-                    $this->redirect('/login');
-
-                    Notification::make()
-                        ->title('Akun berhasil dihapus')
-                        ->success()
-                        ->send();
-                }),
+            Action::make('back_to_dashboard')
+                ->label('Kembali ke Dashboard')
+                ->url(route('filament.admin.pages.dashboard'))
+                ->color('gray'),
         ];
     }
 }

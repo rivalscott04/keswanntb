@@ -48,9 +48,6 @@ class UserSeeder extends Seeder
                 'wewenang_id' => 3,
                 'kab_kota_id' => $kabKota->id,
                 'is_admin' => false,
-                'is_pernah_daftar' => true,
-                'status' => 1,
-                'jenis_akun' => 'disnak',
                 'alamat' => $kabKota->nama,
             ]);
         }

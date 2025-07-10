@@ -20,131 +20,56 @@ class Register extends BaseRegister
     {
         return $form
             ->schema([
-                Forms\Components\Grid::make(2)
+                Forms\Components\Section::make('Data Pribadi')
                     ->schema([
-                        Forms\Components\Section::make('Status Pendaftaran')
-                            ->schema([
-                                Forms\Components\Toggle::make('is_pernah_daftar')
-                                    ->label('Sudah Pernah Mendaftar?')
-                                    ->default(false)
-                                    ->live(),
-                                Forms\Components\TextInput::make('no_sp3')
-                                    ->label('No. SP3')
-                                    ->visible(fn($get) => $get('is_pernah_daftar')),
-                                Forms\Components\TextInput::make('no_register')
-                                    ->label('Nomor Register')
-                                    ->visible(fn($get) => $get('is_pernah_daftar')),
-                                Forms\Components\FileUpload::make('sp3')
-                                    ->label('Dokumen SP3')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->visible(fn($get) => $get('is_pernah_daftar')),
-                            ])
-                            ->live(),
-                        Forms\Components\Section::make('Jenis Akun')
-                            ->schema([
-                                Forms\Components\Select::make('jenis_akun')
-                                    ->label('Jenis Akun')
-                                    ->options([
-                                        'perusahaan' => 'Perusahaan',
-                                        'perorangan' => 'Perorangan/Instansi Pemerintah',
-                                    ])
-                                    ->required()
-                                    ->live(),
-                            ]),
-                        Forms\Components\Section::make('Bidang Usaha')
-                            ->schema([
-                                Forms\Components\Select::make('bidang_usaha')
-                                    ->label('Bidang Usaha (Komoditas)')
-                                    ->options([
-                                        'hewan_ternak' => 'Hewan Ternak',
-                                        'hewan_kesayangan' => 'Hewan Kesayangan',
-                                        'produk_hewan_produk_olahan' => 'Produk Hewan/Produk Olahan',
-                                        'gabungan_di_antaranya' => 'Gabungan di Antaranya',
-                                    ])
-                                    ->required()
-                                    ->placeholder('Pilih bidang usaha')
-                                    ->helperText('Pilih klasifikasi bidang usaha berdasarkan komoditas yang akan dikelola'),
-                            ]),
-                        Forms\Components\Section::make('Data Perusahaan/Instansi')
-                            ->schema([
-                                Forms\Components\TextInput::make('nama_perusahaan')
-                                    ->label('Nama Perusahaan/Instansi'),
-                                Forms\Components\FileUpload::make('akta_pendirian')
-                                    ->label('Akta Pendirian')
-                                    ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\FileUpload::make('surat_domisili')
-                                    ->label('Surat Domisili')
-                                    ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\FileUpload::make('surat_izin_usaha')
-                                    ->label('Surat Izin Usaha')
-                                    ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\TextInput::make('no_surat_izin_usaha')
-                                    ->label('Nomor Surat Izin Usaha'),
-                                Forms\Components\FileUpload::make('npwp')
-                                    ->label('NPWP')
-                                    ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\TextInput::make('no_npwp')
-                                    ->label('Nomor NPWP'),
-                                Forms\Components\TextInput::make('telepon')
-                                    ->label('Telepon/HP/Faximile'),
-                                Forms\Components\FileUpload::make('surat_tanda_daftar')
-                                    ->label('Tanda Daftar Perusahaan')
-                                    ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\TextInput::make('no_surat_tanda_daftar')
-                                    ->label('Nomor Surat Tanda Daftar Perusahaan'),
-                                Forms\Components\FileUpload::make('rekomendasi_keswan')
-                                    ->label('Rekomendasi Kab/Kota')
-                                    ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\FileUpload::make('surat_kandang_penampungan')
-                                    ->label('Surat Keterangan Mempunyai Kandang Penampungan')
-                                    ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\FileUpload::make('surat_permohonan_perusahaan')
-                                    ->label('Surat Permohonan Perusahaan')
-                                    ->acceptedFileTypes(['application/pdf']),
-                            ])->visible(fn($get) => $get('jenis_akun') === 'perusahaan'),
-                        Forms\Components\Section::make('Data Pribadi')
-                            ->schema([
-                                Forms\Components\TextInput::make('name')
-                                    ->label('Nama')
-                                    ->required(),
-                                Forms\Components\TextInput::make('nik')
-                                    ->label('NIK')
-                                    ->required(),
-                                Forms\Components\TextInput::make('email')
-                                    ->label('Email')
-                                    ->email()
-                                    ->required()
-                                    ->columnSpanFull(),
-                                Forms\Components\TextInput::make('password')
-                                    ->label('Password')
-                                    ->password()
-                                    ->required(),
-                                Forms\Components\TextInput::make('password_confirmation')
-                                    ->label('Ulangi Password')
-                                    ->password()
-                                    ->required(),
-                                Forms\Components\Select::make('kab_kota_id')
-                                    ->label('Kabupaten/Kota')
-                                    ->options(KabKota::all()->pluck('nama', 'id'))
-                                    ->required(),
-                                Forms\Components\TextInput::make('desa')
-                                    ->label('Desa')
-                                    ->required(),
-                                Forms\Components\TextInput::make('alamat')
-                                    ->label('Alamat')
-                                    ->required(),
-                                Forms\Components\TextInput::make('no_hp')
-                                    ->label('Nomor HP')
-                                    ->required(),
-                            ])->columns(),
-                        Forms\Components\Section::make('Dokumen Pendukung')
-                            ->schema([
-                                Forms\Components\FileUpload::make('dokumen_pendukung')
-                                    ->label('Dokumen Pendukung Lainnya')
-                                    ->acceptedFileTypes(['application/pdf']),
-                            ]),
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nama Lengkap')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('nik')
+                            ->label('NIK')
+                            ->required()
+                            ->maxLength(16)
+                            ->numeric(),
+                        Forms\Components\TextInput::make('email')
+                            ->label('Email')
+                            ->email()
+                            ->required()
+                            ->maxLength(255)
+                            ->unique(User::class)
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('password')
+                            ->label('Password')
+                            ->password()
+                            ->required()
+                            ->minLength(8)
+                            ->confirmed(),
+                        Forms\Components\TextInput::make('password_confirmation')
+                            ->label('Ulangi Password')
+                            ->password()
+                            ->required(),
+                        Forms\Components\Select::make('kab_kota_id')
+                            ->label('Kabupaten/Kota')
+                            ->options(KabKota::all()->pluck('nama', 'id'))
+                            ->required(),
+                        Forms\Components\TextInput::make('desa')
+                            ->label('Desa/Kelurahan')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\Textarea::make('alamat')
+                            ->label('Alamat Lengkap')
+                            ->required()
+                            ->maxLength(500)
+                            ->rows(3)
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('no_hp')
+                            ->label('Nomor HP')
+                            ->required()
+                            ->maxLength(15)
+                            ->tel()
+                            ->columnSpanFull(),
                     ])
-                    ->columnSpanFull(),
+                    ->columns(2),
             ]);
     }
 
@@ -153,18 +78,28 @@ class Register extends BaseRegister
         $data['wewenang_id'] = Wewenang::where('nama', 'Pengguna')->first()->id;
         $data['password'] = Hash::make($data['password']);
         unset($data['password_confirmation']);
+        
         if (App::environment('local')) {
             $data['email_verified_at'] = now();
         }
+        
         $user = User::create($data);
+        
         if (App::environment('production')) {
             event(new Registered($user));
         }
+        
         Notification::make()
             ->title('Pendaftaran berhasil!')
             ->success()
-            ->body('Silakan menunggu persetujuan akun Anda.')
+            ->body('Silakan login dan lengkapi data perusahaan untuk membuat pengajuan SP3.')
             ->send();
+            
         return $user;
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return route('filament.admin.auth.login');
     }
 }

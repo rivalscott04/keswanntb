@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->foreignId('kab_kota_id')->nullable()->constrained('kab_kota')->onDelete('set null');
             $table->foreignId('wewenang_id')->nullable()->constrained('wewenang')->onDelete('set null');
             $table->foreignId('bidang_id')->nullable()->constrained('bidang')->onDelete('set null');
+            $table->string('nik')->nullable()->unique();
             $table->string('no_hp')->nullable();
             $table->text('alamat')->nullable();
             $table->string('desa')->nullable();
@@ -32,7 +33,7 @@ return new class extends Migration {
             $table->dropForeign(['kab_kota_id']);
             $table->dropForeign(['wewenang_id']);
             $table->dropForeign(['bidang_id']);
-            $table->dropColumn(['kab_kota_id', 'wewenang_id', 'bidang_id', 'no_hp', 'alamat', 'desa', 'is_admin']);
+            $table->dropColumn(['kab_kota_id', 'wewenang_id', 'bidang_id', 'nik', 'no_hp', 'alamat', 'desa', 'is_admin']);
         });
     }
 };
