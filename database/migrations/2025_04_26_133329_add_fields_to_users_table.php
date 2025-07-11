@@ -18,8 +18,10 @@ return new class extends Migration {
             $table->text('alamat')->nullable();
             $table->string('desa')->nullable();
             $table->boolean('is_admin')->default(false);
-            $table->timestamp('account_verified_at')->nullable();
-            $table->foreignId('account_verified_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->timestamp('kab_kota_verified_at')->nullable();
+            $table->foreignId('kab_kota_verified_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->timestamp('provinsi_verified_at')->nullable();
+            $table->foreignId('provinsi_verified_by')->nullable()->constrained('users')->onDelete('set null');
         });
     }
 
@@ -32,7 +34,9 @@ return new class extends Migration {
             $table->dropForeign(['kab_kota_id']);
             $table->dropForeign(['wewenang_id']);
             $table->dropForeign(['bidang_id']);
-            $table->dropColumn(['kab_kota_id', 'wewenang_id', 'bidang_id', 'no_hp', 'alamat', 'desa', 'is_admin']);
+            $table->dropForeign(['kab_kota_verified_by']);
+            $table->dropForeign(['provinsi_verified_by']);
+            $table->dropColumn(['kab_kota_id', 'wewenang_id', 'bidang_id', 'no_hp', 'alamat', 'desa', 'is_admin', 'kab_kota_verified_at', 'kab_kota_verified_by', 'provinsi_verified_at', 'provinsi_verified_by']);
         });
     }
 };

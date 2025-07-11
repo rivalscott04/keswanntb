@@ -41,7 +41,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'account_verified_at' => 'datetime',
+            'kab_kota_verified_at' => 'datetime',
+            'provinsi_verified_at' => 'datetime',
             'tanggal_verifikasi' => 'datetime',
             'tanggal_berlaku' => 'datetime',
         ];
@@ -67,8 +68,13 @@ class User extends Authenticatable
         return $this->hasMany(Pengajuan::class);
     }
 
-    public function verifiedBy()
+    public function kabKotaVerifiedBy()
     {
-        return $this->belongsTo(User::class, 'account_verified_by');
+        return $this->belongsTo(User::class, 'kab_kota_verified_by');
+    }
+
+    public function provinsiVerifiedBy()
+    {
+        return $this->belongsTo(User::class, 'provinsi_verified_by');
     }
 }

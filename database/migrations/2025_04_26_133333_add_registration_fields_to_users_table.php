@@ -19,14 +19,12 @@ return new class extends Migration {
             $table->string('nik')->nullable();
             $table->string('akta_pendirian')->nullable();
             $table->string('surat_domisili')->nullable();
-            $table->string('surat_izin_usaha')->nullable();
-            $table->string('no_surat_izin_usaha')->nullable();
+            $table->string('nib')->nullable();
+            $table->string('no_nib')->nullable();
             $table->string('nama_perusahaan')->nullable();
             $table->string('no_npwp')->nullable();
             $table->string('telepon')->nullable();
             $table->string('npwp')->nullable();
-            $table->string('surat_tanda_daftar')->nullable();
-            $table->string('no_surat_tanda_daftar')->nullable();
             $table->string('rekomendasi_keswan')->nullable();
             $table->string('surat_kandang_penampungan')->nullable();
             $table->string('dokumen_pendukung')->nullable();
@@ -52,14 +50,12 @@ return new class extends Migration {
                 'nik',
                 'akta_pendirian',
                 'surat_domisili',
-                'surat_izin_usaha',
-                'no_surat_izin_usaha',
+                'nib',
+                'no_nib',
                 'nama_perusahaan',
                 'no_npwp',
                 'telepon',
                 'npwp',
-                'surat_tanda_daftar',
-                'no_surat_tanda_daftar',
                 'rekomendasi_keswan',
                 'surat_kandang_penampungan',
                 'dokumen_pendukung',

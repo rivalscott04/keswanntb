@@ -15,6 +15,7 @@ use App\Services\PengajuanService;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\PengajuanResource\Pages;
 use App\Filament\Components\UnverifiedAccountNotification;
+use App\Services\PelabuhanService;
 
 class PengajuanResource extends Resource
 {
@@ -91,9 +92,24 @@ class PengajuanResource extends Resource
                             ->required()
                             ->live(),
 
-                        Forms\Components\TextInput::make('pelabuhan_asal')
+                        Forms\Components\Select::make('pelabuhan_asal')
                             ->label('Nama Pelabuhan Asal')
-                            ->required(),
+                            ->options(
+                                fn(callable $get) => PelabuhanService::getPelabuhanOptionsWithLoading()
+                            )
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->live()
+                            ->placeholder(fn() => PelabuhanService::getPelabuhanPlaceholder())
+                            ->helperText(fn() => PelabuhanService::getPelabuhanHelperText())
+                            ->loadingMessage('Memuat data pelabuhan dari API Kemenhub...')
+                            ->disabled(fn() => PelabuhanService::isDataLoading()),
+
+                        Forms\Components\TextInput::make('pelabuhan_asal_lainnya')
+                            ->label('Nama Pelabuhan Asal (Lainnya)')
+                            ->visible(fn(callable $get) => $get('pelabuhan_asal') === 'Lainnya')
+                            ->required(fn(callable $get) => $get('pelabuhan_asal') === 'Lainnya'),
 
                         Forms\Components\Select::make('kab_kota_tujuan_id')
                             ->label('Kab/Kota Tujuan Ternak')
@@ -117,9 +133,24 @@ class PengajuanResource extends Resource
                                 'different' => 'Kab/Kota tujuan tidak boleh sama dengan asal.',
                             ]),
 
-                        Forms\Components\TextInput::make('pelabuhan_tujuan')
+                        Forms\Components\Select::make('pelabuhan_tujuan')
                             ->label('Nama Pelabuhan Tujuan')
-                            ->required(),
+                            ->options(
+                                fn(callable $get) => PelabuhanService::getPelabuhanOptionsWithLoading()
+                            )
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->live()
+                            ->placeholder(fn() => PelabuhanService::getPelabuhanPlaceholder())
+                            ->helperText(fn() => PelabuhanService::getPelabuhanHelperText())
+                            ->loadingMessage('Memuat data pelabuhan dari API Kemenhub...')
+                            ->disabled(fn() => PelabuhanService::isDataLoading()),
+
+                        Forms\Components\TextInput::make('pelabuhan_tujuan_lainnya')
+                            ->label('Nama Pelabuhan Tujuan (Lainnya)')
+                            ->visible(fn(callable $get) => $get('pelabuhan_tujuan') === 'Lainnya')
+                            ->required(fn(callable $get) => $get('pelabuhan_tujuan') === 'Lainnya'),
                     ])->columns(),
 
                 Forms\Components\Section::make('Informasi Ternak')
@@ -277,7 +308,7 @@ class PengajuanResource extends Resource
     {
         $user = auth()->user();
         
-        if (!$user->account_verified_at) {
+        if (!$user->provinsi_verified_at) {
             UnverifiedAccountNotification::make()->send();
             return false;
         }
@@ -288,6 +319,6 @@ class PengajuanResource extends Resource
     public static function canCreate(): bool
     {
         $user = auth()->user();
-        return $user->wewenang->nama === 'Pengguna' && $user->account_verified_at !== null;
+        return $user->wewenang->nama === 'Pengguna' && $user->provinsi_verified_at !== null;
     }
 }

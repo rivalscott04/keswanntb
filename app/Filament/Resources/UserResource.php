@@ -11,7 +11,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use STS\FilamentImpersonate\Tables\Actions\Impersonate;
 use Illuminate\Support\Facades\Hash;
@@ -30,22 +29,22 @@ class UserResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return Auth::check() && Auth::user()->is_admin;
+        return auth()->check() && auth()->user()->is_admin;
     }
 
     public static function canCreate(): bool
     {
-        return Auth::check() && Auth::user()->is_admin;
+        return auth()->check() && auth()->user()->is_admin;
     }
 
     public static function canEdit(Model $record): bool
     {
-        return Auth::check() && Auth::user()->is_admin;
+        return auth()->check() && auth()->user()->is_admin;
     }
 
     public static function canDelete(Model $record): bool
     {
-        return Auth::check() && Auth::user()->is_admin;
+        return auth()->check() && auth()->user()->is_admin;
     }
 
     public static function form(Form $form): Form
@@ -66,8 +65,7 @@ class UserResource extends Resource
                                 $set('company_name', null);
                                 $set('company_address', null);
                                 $set('npwp', null);
-                                $set('no_surat_izin_usaha', null);
-                                $set('no_surat_tanda_daftar', null);
+                                $set('no_nib', null);
                                 $set('no_register', null);
                             }),
 
@@ -130,21 +128,16 @@ class UserResource extends Resource
                                 Forms\Components\FileUpload::make('surat_domisili')
                                     ->label('Surat Domisili')
                                     ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\FileUpload::make('surat_izin_usaha')
-                                    ->label('Surat Izin Usaha')
+                                Forms\Components\FileUpload::make('nib')
+                                    ->label('NIB (Nomor Induk Berusaha)')
                                     ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\TextInput::make('no_surat_izin_usaha')
-                                    ->label('Nomor Surat Izin Usaha'),
+                                Forms\Components\TextInput::make('no_nib')
+                                    ->label('Nomor NIB'),
                                 Forms\Components\FileUpload::make('npwp')
                                     ->label('NPWP')
                                     ->acceptedFileTypes(['application/pdf']),
                                 Forms\Components\TextInput::make('no_npwp')
                                     ->label('Nomor NPWP'),
-                                Forms\Components\FileUpload::make('surat_tanda_daftar')
-                                    ->label('Tanda Daftar Perusahaan')
-                                    ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\TextInput::make('no_surat_tanda_daftar')
-                                    ->label('Nomor Surat Tanda Daftar Perusahaan'),
                                 Forms\Components\FileUpload::make('rekomendasi_keswan')
                                     ->label('Rekomendasi Kab/Kota')
                                     ->acceptedFileTypes(['application/pdf']),
@@ -243,6 +236,23 @@ class UserResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $user = auth()->user();
+        
+        // Filter query berdasarkan wewenang
+        $table->modifyQueryUsing(function ($query) use ($user) {
+            if ($user->wewenang->nama === 'Disnak Kab/Kota') {
+                // Disnak Kab/Kota hanya melihat user dari kab/kota yang sama
+                return $query->where('kab_kota_id', $user->kab_kota_id)
+                            ->where('wewenang_id', 5); // Pengguna
+            }
+            if ($user->wewenang->nama === 'Disnak Provinsi') {
+                // Disnak Provinsi melihat semua user yang sudah diverifikasi kab/kota
+                return $query->where('wewenang_id', 5) // Pengguna
+                            ->whereNotNull('kab_kota_verified_at');
+            }
+            return $query;
+        });
+        
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
@@ -257,6 +267,23 @@ class UserResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('no_hp')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('kab_kota_verified_at')
+                    ->label('Status Kab/Kota')
+                    ->formatStateUsing(fn($state) => $state ? 'Terverifikasi' : 'Belum Terverifikasi')
+                    ->badge()
+                    ->color(fn($state) => $state ? 'success' : 'warning')
+                    ->visible(fn() => auth()->user()->wewenang->nama === 'Disnak Kab/Kota' || auth()->user()->wewenang->nama === 'Disnak Provinsi'),
+                Tables\Columns\TextColumn::make('provinsi_verified_at')
+                    ->label('Status Provinsi')
+                    ->formatStateUsing(fn($state) => $state ? 'Terverifikasi' : 'Belum Terverifikasi')
+                    ->badge()
+                    ->color(fn($state) => $state ? 'success' : 'warning')
+                    ->visible(fn() => auth()->user()->wewenang->nama === 'Disnak Provinsi'),
+                Tables\Columns\TextColumn::make('provinsi_verified_at')
+                    ->label('Status Akun')
+                    ->formatStateUsing(fn($state) => $state ? 'Aktif' : 'Belum Aktif')
+                    ->badge()
+                    ->color(fn($state) => $state ? 'success' : 'danger'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -272,11 +299,110 @@ class UserResource extends Resource
                     ->multiple()
                     ->relationship('wewenang', 'nama')
                     ->preload(),
+                Tables\Filters\SelectFilter::make('kab_kota_verified_at')
+                    ->label('Status Verifikasi Kab/Kota')
+                    ->options([
+                        'verified' => 'Terverifikasi',
+                        'unverified' => 'Belum Terverifikasi',
+                    ])
+                    ->query(function ($query, array $data) {
+                        if ($data['value'] === 'verified') {
+                            return $query->whereNotNull('kab_kota_verified_at');
+                        }
+                        if ($data['value'] === 'unverified') {
+                            return $query->whereNull('kab_kota_verified_at');
+                        }
+                        return $query;
+                    })
+                    ->visible(fn() => auth()->user()->wewenang->nama === 'Disnak Kab/Kota' || auth()->user()->wewenang->nama === 'Disnak Provinsi'),
+                Tables\Filters\SelectFilter::make('provinsi_verified_at')
+                    ->label('Status Verifikasi Provinsi')
+                    ->options([
+                        'verified' => 'Terverifikasi',
+                        'unverified' => 'Belum Terverifikasi',
+                    ])
+                    ->query(function ($query, array $data) {
+                        if ($data['value'] === 'verified') {
+                            return $query->whereNotNull('provinsi_verified_at');
+                        }
+                        if ($data['value'] === 'unverified') {
+                            return $query->whereNull('provinsi_verified_at');
+                        }
+                        return $query;
+                    })
+                    ->visible(fn() => auth()->user()->wewenang->nama === 'Disnak Provinsi'),
             ])
             ->actions([
                 Impersonate::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Tables\Actions\Action::make('verifikasi_kab_kota')
+                    ->label('Verifikasi Kab/Kota')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(function ($record) {
+                        $user = auth()->user();
+                        return $user->wewenang->nama === 'Disnak Kab/Kota' &&
+                               $user->kab_kota_id === $record->kab_kota_id &&
+                               !$record->kab_kota_verified_at &&
+                               $record->wewenang->nama === 'Pengguna';
+                    })
+                    ->form([
+                        Forms\Components\Textarea::make('catatan')
+                            ->label('Catatan Verifikasi')
+                            ->required(),
+                    ])
+                    ->action(function (array $data, $record) {
+                        $record->update([
+                            'kab_kota_verified_at' => now(),
+                            'kab_kota_verified_by' => auth()->id(),
+                        ]);
+                        
+                        \Filament\Notifications\Notification::make()
+                            ->title('User berhasil diverifikasi oleh Kab/Kota')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('verifikasi_provinsi')
+                    ->label('Verifikasi Provinsi')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(function ($record) {
+                        $user = auth()->user();
+                        return $user->wewenang->nama === 'Disnak Provinsi' &&
+                               $record->kab_kota_verified_at &&
+                               !$record->provinsi_verified_at &&
+                               $record->wewenang->nama === 'Pengguna';
+                    })
+                    ->form([
+                        Forms\Components\Textarea::make('catatan')
+                            ->label('Catatan Verifikasi')
+                            ->required(),
+                        Forms\Components\TextInput::make('no_sp3')
+                            ->label('No. SP3')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('no_register')
+                            ->label('Nomor Register')
+                            ->required()
+                            ->maxLength(255),
+                    ])
+                    ->action(function (array $data, $record) {
+                        $now = now();
+                        $record->update([
+                            'provinsi_verified_at' => $now,
+                            'provinsi_verified_by' => auth()->id(),
+                            'tanggal_verifikasi' => $now,
+                            'tanggal_berlaku' => $now->copy()->addYears(3),
+                            'no_sp3' => $data['no_sp3'],
+                            'no_register' => $data['no_register']
+                        ]);
+                        
+                        \Filament\Notifications\Notification::make()
+                            ->title('User berhasil diverifikasi oleh Provinsi')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -74,8 +74,34 @@ class UserSeeder extends Seeder
             'kab_kota_id' => 3,
             'no_hp' => '081234567894',
             'alamat' => 'Jl. Pengusaha No. 1',
-            'account_verified_at' => now(),
-            'account_verified_by' => 1,
+            'kab_kota_verified_at' => now(),
+            'kab_kota_verified_by' => 3, // Disnak Kab/Kota
+            'provinsi_verified_at' => now(),
+            'provinsi_verified_by' => 2, // Disnak Provinsi
+        ]);
+
+        // User yang belum diverifikasi kab/kota
+        User::create([
+            'name' => 'Pengusaha Baru',
+            'email' => 'pengusaha.baru@example.com',
+            'password' => Hash::make('password'),
+            'wewenang_id' => 5,
+            'kab_kota_id' => 3,
+            'no_hp' => '081234567895',
+            'alamat' => 'Jl. Pengusaha Baru No. 1',
+        ]);
+
+        // User yang sudah diverifikasi kab/kota tapi belum provinsi
+        User::create([
+            'name' => 'Pengusaha Menunggu Provinsi',
+            'email' => 'pengusaha.menunggu@example.com',
+            'password' => Hash::make('password'),
+            'wewenang_id' => 5,
+            'kab_kota_id' => 3,
+            'no_hp' => '081234567896',
+            'alamat' => 'Jl. Pengusaha Menunggu No. 1',
+            'kab_kota_verified_at' => now(),
+            'kab_kota_verified_by' => 3, // Disnak Kab/Kota
         ]);
     }
 }

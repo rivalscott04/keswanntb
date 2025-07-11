@@ -3,7 +3,6 @@
 namespace App\Filament\Traits;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 
 trait HasAdminOnlyAccess
 {

@@ -53,21 +53,8 @@ class PengaturanResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('key')
+                    ->label('Pengaturan')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('value')
-                    ->formatStateUsing(function ($state) {
-                        if (is_string($state)) {
-                            $data = json_decode($state, true);
-                            if (is_array($data)) {
-                                return collect($data)->map(function ($value, $key) {
-                                    return "{$key}: {$value}";
-                                })->join(', ');
-                            }
-                        }
-                        return $state;
-                    })
-                    ->wrap()
-                    ->limit(50),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

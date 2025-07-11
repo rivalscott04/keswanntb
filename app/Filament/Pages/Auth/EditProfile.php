@@ -6,7 +6,6 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Pages\Auth\EditProfile as BaseEditProfile;
 use Filament\Actions\Action;
-use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Hash;
 
@@ -83,13 +82,13 @@ class EditProfile extends BaseEditProfile
                                     ->acceptedFileTypes(['application/pdf'])
                                     ->downloadable()
                                     ->openable(),
-                                Forms\Components\FileUpload::make('surat_izin_usaha')
-                                    ->label('Surat Izin Usaha')
+                                Forms\Components\FileUpload::make('nib')
+                                    ->label('NIB (Nomor Induk Berusaha)')
                                     ->acceptedFileTypes(['application/pdf'])
                                     ->downloadable()
                                     ->openable(),
-                                Forms\Components\TextInput::make('no_surat_izin_usaha')
-                                    ->label('Nomor Surat Izin Usaha'),
+                                Forms\Components\TextInput::make('no_nib')
+                                    ->label('Nomor NIB'),
                                 Forms\Components\FileUpload::make('npwp')
                                     ->label('NPWP')
                                     ->acceptedFileTypes(['application/pdf'])
@@ -97,13 +96,6 @@ class EditProfile extends BaseEditProfile
                                     ->openable(),
                                 Forms\Components\TextInput::make('no_npwp')
                                     ->label('Nomor NPWP'),
-                                Forms\Components\FileUpload::make('surat_tanda_daftar')
-                                    ->label('Tanda Daftar Perusahaan')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->downloadable()
-                                    ->openable(),
-                                Forms\Components\TextInput::make('no_surat_tanda_daftar')
-                                    ->label('Nomor Surat Tanda Daftar Perusahaan'),
                                 Forms\Components\FileUpload::make('rekomendasi_keswan')
                                     ->label('Rekomendasi Kab/Kota')
                                     ->acceptedFileTypes(['application/pdf'])
@@ -127,15 +119,15 @@ class EditProfile extends BaseEditProfile
                                 Forms\Components\TextInput::make('name')
                                     ->label('Nama')
                                     ->required(),
+                                Forms\Components\TextInput::make('nik')
+                                    ->label('NIK')
+                                    ->required()
+                                    ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
                                 Forms\Components\TextInput::make('email')
                                     ->label('Email')
                                     ->email()
                                     ->required()
                                     ->unique(ignoreRecord: true),
-                                Forms\Components\TextInput::make('nik')
-                                    ->label('NIK')
-                                    ->required()
-                                    ->visible(fn() => auth()->user()->wewenang->nama === 'Pengguna'),
                                 Forms\Components\TextInput::make('password')
                                     ->label('Password')
                                     ->password()
@@ -217,10 +209,10 @@ class EditProfile extends BaseEditProfile
                 ->modalSubmitActionLabel('Ya, Hapus Akun')
                 ->modalCancelActionLabel('Batal')
                 ->action(function () {
-                    $user = Auth::user();
+                    $user = auth()->user();
 
                     // Logout the user
-                    Auth::logout();
+                    auth()->logout();
 
                     // Delete the user
                     $user->delete();

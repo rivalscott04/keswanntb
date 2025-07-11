@@ -76,7 +76,7 @@
                 <div>
                     <dt class="text-sm font-medium text-gray-500">Status</dt>
                     <dd class="mt-1">
-                        @if($user->account_verified_at)
+                        @if($user->provinsi_verified_at)
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">
                                 Terverifikasi
                             </span>
@@ -87,14 +87,14 @@
                         @endif
                     </dd>
                 </div>
-                @if($user->account_verified_at)
+                @if($user->provinsi_verified_at)
                     <div>
                         <dt class="text-sm font-medium text-gray-500">Diverifikasi Pada</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $user->account_verified_at->format('d F Y H:i') }}</dd>
+                        <dd class="mt-1 text-sm text-gray-900">{{ $user->provinsi_verified_at->format('d F Y H:i') }}</dd>
                     </div>
                     <div>
                         <dt class="text-sm font-medium text-gray-500">Diverifikasi Oleh</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $user->verifiedBy?->name }}</dd>
+                        <dd class="mt-1 text-sm text-gray-900">{{ $user->provinsiVerifiedBy?->name }}</dd>
                     </div>
                 @endif
             </dl>

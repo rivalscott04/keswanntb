@@ -2,14 +2,13 @@
 
 namespace App\Filament\Traits;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 
 trait HasNavigationVisibility
 {
     public static function shouldRegisterNavigation(): bool
     {
-        $user = Auth::user();
+        $user = auth()->user();
 
         if (!$user) {
             return false;
@@ -21,7 +20,7 @@ trait HasNavigationVisibility
         }
 
         // If user has wewenang "Pengguna", they can only see Pengajuan group
-        if ($user->wewenang->nama === 'Pengguna' && $user->account_verified_at) {
+        if ($user->wewenang->nama === 'Pengguna' && $user->provinsi_verified_at) {
             return static::$navigationGroup === 'Pengajuan';
         }
 

@@ -15,6 +15,6 @@ class UnverifiedAccountWidget extends Widget
     public static function canView(): bool
     {
         $user = auth()->user();
-        return $user->wewenang->nama === 'Pengguna' && !$user->account_verified_at;
+        return $user->wewenang->nama === 'Pengguna' && !$user->provinsi_verified_at;
     }
 } 

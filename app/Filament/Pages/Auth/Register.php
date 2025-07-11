@@ -75,11 +75,11 @@ class Register extends BaseRegister
                                 Forms\Components\FileUpload::make('surat_domisili')
                                     ->label('Surat Domisili')
                                     ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\FileUpload::make('surat_izin_usaha')
-                                    ->label('Surat Izin Usaha')
+                                Forms\Components\FileUpload::make('nib')
+                                    ->label('NIB (Nomor Induk Berusaha)')
                                     ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\TextInput::make('no_surat_izin_usaha')
-                                    ->label('Nomor Surat Izin Usaha'),
+                                Forms\Components\TextInput::make('no_nib')
+                                    ->label('Nomor NIB'),
                                 Forms\Components\FileUpload::make('npwp')
                                     ->label('NPWP')
                                     ->acceptedFileTypes(['application/pdf']),
@@ -87,17 +87,14 @@ class Register extends BaseRegister
                                     ->label('Nomor NPWP'),
                                 Forms\Components\TextInput::make('telepon')
                                     ->label('Telepon/HP/Faximile'),
-                                Forms\Components\FileUpload::make('surat_tanda_daftar')
-                                    ->label('Tanda Daftar Perusahaan')
-                                    ->acceptedFileTypes(['application/pdf']),
-                                Forms\Components\TextInput::make('no_surat_tanda_daftar')
-                                    ->label('Nomor Surat Tanda Daftar Perusahaan'),
                                 Forms\Components\FileUpload::make('rekomendasi_keswan')
                                     ->label('Rekomendasi Kab/Kota')
-                                    ->acceptedFileTypes(['application/pdf']),
+                                    ->acceptedFileTypes(['application/pdf'])
+                                    ->helperText('Rekomendasi penerbitan SP3 dari Dinas Kabupaten/Kota'),
                                 Forms\Components\FileUpload::make('surat_kandang_penampungan')
                                     ->label('Surat Keterangan Mempunyai Kandang Penampungan')
-                                    ->acceptedFileTypes(['application/pdf']),
+                                    ->acceptedFileTypes(['application/pdf'])
+                                    ->helperText('Surat Keterangan Mempunyai Kandang Penampungan/Gudang Penyimpanan'),
                                 Forms\Components\FileUpload::make('surat_permohonan_perusahaan')
                                     ->label('Surat Permohonan Perusahaan')
                                     ->acceptedFileTypes(['application/pdf']),

@@ -15,6 +15,7 @@ use App\Models\Pengaturan;
 use App\Helpers\FormatHelper;
 use Filament\Notifications\Notification;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Form;
 
 class ViewSp3 extends ViewRecord
@@ -106,8 +107,8 @@ class ViewSp3 extends ViewRecord
                                             ])->render()
                                         );
                                     }),
-                                TextEntry::make('surat_izin_usaha')
-                                    ->label('Surat Izin Usaha')
+                                TextEntry::make('nib')
+                                    ->label('NIB (Nomor Induk Berusaha)')
                                     ->formatStateUsing(function ($state) {
                                         if (!$state)
                                             return 'Belum diunggah';
@@ -118,8 +119,8 @@ class ViewSp3 extends ViewRecord
                                             ])->render()
                                         );
                                     }),
-                                TextEntry::make('no_surat_izin_usaha')
-                                    ->label('Nomor Surat Izin Usaha'),
+                                TextEntry::make('no_nib')
+                                    ->label('Nomor NIB'),
                                 TextEntry::make('npwp')
                                     ->label('NPWP')
                                     ->formatStateUsing(function ($state) {
@@ -134,20 +135,6 @@ class ViewSp3 extends ViewRecord
                                     }),
                                 TextEntry::make('no_npwp')
                                     ->label('Nomor NPWP'),
-                                TextEntry::make('surat_tanda_daftar')
-                                    ->label('Tanda Daftar Perusahaan')
-                                    ->formatStateUsing(function ($state) {
-                                        if (!$state)
-                                            return 'Belum diunggah';
-                                        return new \Illuminate\Support\HtmlString(
-                                            view('filament.components.document-link', [
-                                                'url' => Storage::url($state),
-                                                'label' => 'Lihat Dokumen'
-                                            ])->render()
-                                        );
-                                    }),
-                                TextEntry::make('no_surat_tanda_daftar')
-                                    ->label('Nomor Surat Tanda Daftar Perusahaan'),
                                 TextEntry::make('rekomendasi_keswan')
                                     ->label('Rekomendasi Kab/Kota')
                                     ->formatStateUsing(function ($state) {
@@ -228,16 +215,38 @@ class ViewSp3 extends ViewRecord
                     ->schema([
                         Grid::make(2)
                             ->schema([
-                                TextEntry::make('account_verified_at')
-                                    ->label('Status')
+                                TextEntry::make('kab_kota_verified_at')
+                                    ->label('Status Kab/Kota')
                                     ->formatStateUsing(fn($state) => $state ? 'Terverifikasi' : 'Belum Terverifikasi')
                                     ->badge()
                                     ->color(fn($state) => $state ? 'success' : 'warning'),
-                                TextEntry::make('account_verified_at')
-                                    ->label('Diverifikasi Pada')
+                                TextEntry::make('kab_kota_verified_at')
+                                    ->label('Diverifikasi Kab/Kota Pada')
                                     ->formatStateUsing(fn($state) => $state ? $state->translatedFormat('d F Y H:i') : '-'),
-                                TextEntry::make('verifiedBy.name')
-                                    ->label('Diverifikasi Oleh')
+                                TextEntry::make('kabKotaVerifiedBy.name')
+                                    ->label('Diverifikasi Kab/Kota Oleh')
+                                    ->formatStateUsing(fn($state) => $state ?: '-'),
+                                TextEntry::make('provinsi_verified_at')
+                                    ->label('Status Provinsi')
+                                    ->formatStateUsing(fn($state) => $state ? 'Terverifikasi' : 'Belum Terverifikasi')
+                                    ->badge()
+                                    ->color(fn($state) => $state ? 'success' : 'warning'),
+                                TextEntry::make('provinsi_verified_at')
+                                    ->label('Diverifikasi Provinsi Pada')
+                                    ->formatStateUsing(fn($state) => $state ? $state->translatedFormat('d F Y H:i') : '-'),
+                                TextEntry::make('provinsiVerifiedBy.name')
+                                    ->label('Diverifikasi Provinsi Oleh')
+                                    ->formatStateUsing(fn($state) => $state ?: '-'),
+                                TextEntry::make('provinsi_verified_at')
+                                    ->label('Status Akun')
+                                    ->formatStateUsing(fn($state) => $state ? 'Aktif' : 'Belum Aktif')
+                                    ->badge()
+                                    ->color(fn($state) => $state ? 'success' : 'danger'),
+                                TextEntry::make('provinsi_verified_at')
+                                    ->label('Aktif Pada')
+                                    ->formatStateUsing(fn($state) => $state ? $state->translatedFormat('d F Y H:i') : '-'),
+                                TextEntry::make('provinsiVerifiedBy.name')
+                                    ->label('Diaktifkan Oleh')
                                     ->formatStateUsing(fn($state) => $state ?: '-'),
                             ]),
                     ]),
@@ -269,8 +278,7 @@ class ViewSp3 extends ViewRecord
                         'nama_perusahaan' => $this->record->nama_perusahaan,
                         'penanggung_jawab' => $this->record->name,
                         'bidang_usaha' => $bidangUsaha,
-                        'nomor_surat_izin_usaha' => $this->record->no_surat_izin_usaha,
-                        'nomor_tanda_daftar_perusahaan' => $this->record->no_surat_tanda_daftar,
+                        'nomor_nib' => $this->record->no_nib,
                         'nomor_npwp' => $this->record->no_npwp,
                         'alamat' => str($this->record->alamat)->title()->toString() . ' ' . $this->record->kabKota?->nama,
                         'telpon' => $this->record->telepon,
@@ -290,12 +298,48 @@ class ViewSp3 extends ViewRecord
 
                     return response()->download($outputPath)->deleteFileAfterSend();
                 }),
-            Action::make('verify')
-                ->label('Verifikasi Pengguna')
+            Action::make('verify_kab_kota')
+                ->label('Verifikasi Kab/Kota')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
-                ->visible(fn() => !$this->record->account_verified_at)
+                ->visible(function() {
+                    $user = auth()->user();
+                    return $user->wewenang->nama === 'Disnak Kab/Kota' &&
+                           $user->kab_kota_id === $this->record->kab_kota_id &&
+                           !$this->record->kab_kota_verified_at &&
+                           $this->record->wewenang->nama === 'Pengguna';
+                })
                 ->form([
+                    Textarea::make('catatan')
+                        ->label('Catatan Verifikasi')
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    $this->record->update([
+                        'kab_kota_verified_at' => now(),
+                        'kab_kota_verified_by' => auth()->id(),
+                    ]);
+
+                    Notification::make()
+                        ->title('User berhasil diverifikasi oleh Kab/Kota')
+                        ->success()
+                        ->send();
+                }),
+            Action::make('verify_provinsi')
+                ->label('Verifikasi Provinsi')
+                ->icon('heroicon-o-check-circle')
+                ->color('success')
+                ->visible(function() {
+                    $user = auth()->user();
+                    return $user->wewenang->nama === 'Disnak Provinsi' &&
+                           $this->record->kab_kota_verified_at &&
+                           !$this->record->provinsi_verified_at &&
+                           $this->record->wewenang->nama === 'Pengguna';
+                })
+                ->form([
+                    Textarea::make('catatan')
+                        ->label('Catatan Verifikasi')
+                        ->required(),
                     TextInput::make('no_sp3')
                         ->label('No. SP3')
                         ->required()
@@ -308,8 +352,8 @@ class ViewSp3 extends ViewRecord
                 ->action(function (array $data) {
                     $now = now();
                     $this->record->update([
-                        'account_verified_at' => $now,
-                        'account_verified_by' => auth()->id(),
+                        'provinsi_verified_at' => $now,
+                        'provinsi_verified_by' => auth()->id(),
                         'tanggal_verifikasi' => $now,
                         'tanggal_berlaku' => $now->copy()->addYears(3),
                         'no_sp3' => $data['no_sp3'],
@@ -317,7 +361,7 @@ class ViewSp3 extends ViewRecord
                     ]);
 
                     Notification::make()
-                        ->title('Pengguna berhasil diverifikasi')
+                        ->title('User berhasil diverifikasi oleh Provinsi')
                         ->success()
                         ->send();
                 }),
