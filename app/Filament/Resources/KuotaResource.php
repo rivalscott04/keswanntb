@@ -40,19 +40,18 @@ class KuotaResource extends Resource
                         'betina' => 'Betina',
                     ])
                     ->required(),
+                Forms\Components\Select::make('kab_kota_id')
+                    ->label('Kab/Kota')
+                    ->relationship('kabKota', 'nama')
+                    ->required()
+                    ->live(),
                 Forms\Components\Select::make('pulau')
                     ->label('Pulau')
                     ->options([
                         'Lombok' => 'Lombok',
                         'Sumbawa' => 'Sumbawa',
                     ])
-                    ->helperText('Jika memilih pulau, opsi Kab/Kota tidak bisa dipilih')
-                    ->live(),
-                Forms\Components\Select::make('kab_kota_id')
-                    ->label('Kab/Kota')
-                    ->relationship('kabKota', 'nama')
-                    ->helperText('Jika memilih Kab/Kota, opsi Pulau tidak bisa dipilih')
-                    ->disabled(fn(callable $get) => $get('pulau'))
+                    ->helperText('Opsional: Pilih pulau untuk kategorisasi tambahan')
                     ->live(),
                 Forms\Components\Select::make('jenis_kuota')
                     ->label('Jenis')

@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->integer('tahun');
             $table->enum('jenis_kuota', ['pemasukan', 'pengeluaran']);
             $table->string('jenis_kelamin');
-            $table->string('pulau');
+            $table->string('pulau')->nullable();
             $table->integer('kuota');
             $table->timestamps();
         });
