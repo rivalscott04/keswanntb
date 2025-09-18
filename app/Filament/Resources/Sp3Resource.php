@@ -184,18 +184,17 @@ class Sp3Resource extends Resource
                     ->label('Tanggal Berlaku')
                     ->date('d/m/Y')
                     ->visible(fn() => auth()->user()->wewenang->nama === 'Disnak Provinsi'),
-                Tables\Columns\TextColumn::make('status_sp3')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status SP3')
                     ->formatStateUsing(function ($record) {
-                        if (!$record->no_sp3) return '-';
+                        if (!$record->no_sp3) return 'Belum Ada';
                         return $record->tanggal_berlaku > now() ? 'Aktif' : 'Kadaluarsa';
                     })
                     ->badge()
                     ->color(function ($record) {
                         if (!$record->no_sp3) return 'gray';
                         return $record->tanggal_berlaku > now() ? 'success' : 'danger';
-                    })
-                    ->visible(fn() => auth()->user()->wewenang->nama === 'Disnak Provinsi'),
+                    }),
             ])
             ->filters([
                 Filter::make('unverified_kab_kota')
