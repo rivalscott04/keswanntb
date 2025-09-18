@@ -14,6 +14,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\FileUpload;
 use App\Filament\Resources\Sp3Resource\Pages;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Forms\Components\Placeholder;
@@ -272,23 +273,43 @@ class Sp3Resource extends Resource
                             ->required(),
                         Forms\Components\TextInput::make('no_sp3')
                             ->label('No. SP3')
-                            ->required()
+                            ->required(fn($record) => !$record->is_pernah_daftar)
+                            ->default(fn($record) => $record->no_sp3)
                             ->maxLength(255),
                         Forms\Components\TextInput::make('no_register')
                             ->label('Nomor Register')
-                            ->required()
+                            ->required(fn($record) => !$record->is_pernah_daftar)
+                            ->default(fn($record) => $record->no_register)
                             ->maxLength(255),
+                        Forms\Components\FileUpload::make('sp3')
+                            ->label('Dokumen SP3')
+                            ->required(fn($record) => !$record->is_pernah_daftar)
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                            ->maxSize(10240) // 10MB
+                            ->directory('sp3-documents')
+                            ->visibility('private')
+                            ->downloadable()
+                            ->openable()
+                            ->previewable(false)
+                            ->helperText('Upload dokumen SP3 yang sudah ditandatangani (PDF, JPG, PNG - maksimal 10MB)'),
                     ])
                     ->action(function (array $data, $record) {
                         $now = now();
-                        $record->update([
+                        $updateData = [
                             'provinsi_verified_at' => $now,
                             'provinsi_verified_by' => auth()->id(),
                             'tanggal_verifikasi' => $now,
                             'tanggal_berlaku' => $now->copy()->addYears(3),
                             'no_sp3' => $data['no_sp3'],
                             'no_register' => $data['no_register']
-                        ]);
+                        ];
+
+                        // Only update SP3 document if it's a new registration or if a new document is uploaded
+                        if (!$record->is_pernah_daftar || !empty($data['sp3'])) {
+                            $updateData['sp3'] = $data['sp3'];
+                        }
+
+                        $record->update($updateData);
                         
                         \Filament\Notifications\Notification::make()
                             ->title('User berhasil diverifikasi oleh Provinsi')
@@ -383,19 +404,33 @@ class Sp3Resource extends Resource
                             ->label('Prefix No. Register')
                             ->required()
                             ->maxLength(50),
+                        Forms\Components\FileUpload::make('sp3_template')
+                            ->label('Template Dokumen SP3')
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                            ->maxSize(10240) // 10MB
+                            ->directory('sp3-documents')
+                            ->visibility('private')
+                            ->helperText('Upload template dokumen SP3 yang sudah ditandatangani (PDF, JPG, PNG - maksimal 10MB)'),
                     ])
                     ->action(function (array $data, $records) {
                         $counter = 1;
                         $records->each(function ($record) use ($data, &$counter) {
                             $now = now();
-                            $record->update([
+                            $updateData = [
                                 'provinsi_verified_at' => $now,
                                 'provinsi_verified_by' => auth()->id(),
                                 'tanggal_verifikasi' => $now,
                                 'tanggal_berlaku' => $now->copy()->addYears(3),
                                 'no_sp3' => $data['no_sp3_prefix'] . '/' . str_pad($counter, 3, '0', STR_PAD_LEFT) . '/' . $now->format('Y'),
                                 'no_register' => $data['no_register_prefix'] . '/' . str_pad($counter, 3, '0', STR_PAD_LEFT) . '/' . $now->format('Y'),
-                            ]);
+                            ];
+
+                            // Only update SP3 document if it's a new registration or if a template is provided
+                            if (!$record->is_pernah_daftar || !empty($data['sp3_template'])) {
+                                $updateData['sp3'] = $data['sp3_template'];
+                            }
+
+                            $record->update($updateData);
                             $counter++;
                         });
                         

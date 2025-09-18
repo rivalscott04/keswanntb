@@ -17,6 +17,7 @@ use Filament\Notifications\Notification;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Form;
+use Filament\Forms\Components\FileUpload;
 
 class ViewSp3 extends ViewRecord
 {
@@ -213,7 +214,7 @@ class ViewSp3 extends ViewRecord
 
                 Section::make('Status Verifikasi')
                     ->schema([
-                        Grid::make(2)
+                        Grid::make(3)
                             ->schema([
                                 TextEntry::make('kab_kota_verified_at')
                                     ->label('Status Kab/Kota')
@@ -248,6 +249,12 @@ class ViewSp3 extends ViewRecord
                                 TextEntry::make('provinsiVerifiedBy.name')
                                     ->label('Diaktifkan Oleh')
                                     ->formatStateUsing(fn($state) => $state ?: '-'),
+                                TextEntry::make('tanggal_verifikasi')
+                                    ->label('Tanggal Verifikasi')
+                                    ->formatStateUsing(fn($state) => $state ? $state->translatedFormat('d F Y H:i') : '-'),
+                                TextEntry::make('tanggal_berlaku')
+                                    ->label('Tanggal Berlaku')
+                                    ->formatStateUsing(fn($state) => $state ? $state->translatedFormat('d F Y H:i') : '-'),
                             ]),
                     ]),
             ]);
@@ -259,7 +266,7 @@ class ViewSp3 extends ViewRecord
             Action::make('draft_sp3')
                 ->label('Draft SP3')
                 ->icon('heroicon-o-document-arrow-down')
-                ->visible(fn() => !$this->record->is_pernah_daftar)
+                ->visible(fn() => !$this->record->is_pernah_daftar && !$this->record->sp3)
                 ->action(function () {
                     $template = new TemplateProcessor(storage_path('template/format-sp3.docx'));
 
@@ -298,22 +305,28 @@ class ViewSp3 extends ViewRecord
 
                     return response()->download($outputPath)->deleteFileAfterSend();
                 }),
+            Action::make('lihat_sp3')
+                ->label('Lihat SP3')
+                ->icon('heroicon-o-document-text')
+                ->color('info')
+                ->visible(fn() => $this->record->sp3)
+                ->url(fn() => Storage::url($this->record->sp3))
+                ->openUrlInNewTab(),
             Action::make('verify_kab_kota')
                 ->label('Verifikasi Kab/Kota')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
                 ->visible(function() {
                     $user = auth()->user();
+                    if ($user->wewenang->nama === 'Administrator' && !$this->record->kab_kota_verified_at) {
+                        return true;
+                    }
                     return $user->wewenang->nama === 'Disnak Kab/Kota' &&
                            $user->kab_kota_id === $this->record->kab_kota_id &&
                            !$this->record->kab_kota_verified_at &&
                            $this->record->wewenang->nama === 'Pengguna';
                 })
-                ->form([
-                    Textarea::make('catatan')
-                        ->label('Catatan Verifikasi')
-                        ->required(),
-                ])
+                ->requiresConfirmation()
                 ->action(function (array $data) {
                     $this->record->update([
                         'kab_kota_verified_at' => now(),
@@ -331,34 +344,54 @@ class ViewSp3 extends ViewRecord
                 ->color('success')
                 ->visible(function() {
                     $user = auth()->user();
+                    if ($user->wewenang->nama === 'Administrator' && $this->record->kab_kota_verified_at && !$this->record->provinsi_verified_at) {
+                        return true;
+                    }
                     return $user->wewenang->nama === 'Disnak Provinsi' &&
                            $this->record->kab_kota_verified_at &&
                            !$this->record->provinsi_verified_at &&
                            $this->record->wewenang->nama === 'Pengguna';
                 })
                 ->form([
-                    Textarea::make('catatan')
-                        ->label('Catatan Verifikasi')
-                        ->required(),
                     TextInput::make('no_sp3')
                         ->label('No. SP3')
-                        ->required()
+                        ->required(fn($record) => !$record->is_pernah_daftar)
+                        ->default(fn($record) => $record->no_sp3)
                         ->maxLength(255),
                     TextInput::make('no_register')
                         ->label('Nomor Register')
-                        ->required()
+                        ->required(fn($record) => !$record->is_pernah_daftar)
+                        ->default(fn($record) => $record->no_register)
                         ->maxLength(255),
+                    FileUpload::make('sp3')
+                        ->label('Dokumen SP3')
+                        ->required(fn($record) => !$record->is_pernah_daftar)
+                        ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                        ->maxSize(10240) // 10MB
+                        ->directory('sp3-documents')
+                        ->visibility('private')
+                        ->downloadable()
+                        ->openable()
+                        ->previewable(false)
+                        ->helperText('Upload dokumen SP3 yang sudah ditandatangani (PDF, JPG, PNG - maksimal 10MB)'),
                 ])
                 ->action(function (array $data) {
                     $now = now();
-                    $this->record->update([
+                    $updateData = [
                         'provinsi_verified_at' => $now,
                         'provinsi_verified_by' => auth()->id(),
                         'tanggal_verifikasi' => $now,
                         'tanggal_berlaku' => $now->copy()->addYears(3),
                         'no_sp3' => $data['no_sp3'],
                         'no_register' => $data['no_register']
-                    ]);
+                    ];
+
+                    // Only update SP3 document if it's a new registration or if a new document is uploaded
+                    if (!$this->record->is_pernah_daftar || !empty($data['sp3'])) {
+                        $updateData['sp3'] = $data['sp3'];
+                    }
+
+                    $this->record->update($updateData);
 
                     Notification::make()
                         ->title('User berhasil diverifikasi oleh Provinsi')
