@@ -63,11 +63,8 @@ class PengajuanPemasukanResource extends Resource
                             ->preload()
                             ->required()
                             ->columnSpanFull(),
-                        Forms\Components\Select::make('kab_kota_asal')
+                        Forms\Components\TextInput::make('kab_kota_asal')
                             ->label('Kota Asal Ternak')
-                            ->relationship('kabKotaAsal', 'nama')
-                            ->searchable()
-                            ->preload()
                             ->required(),
                         Forms\Components\Select::make('pelabuhan_asal')
                             ->label('Nama Pelabuhan Asal')
