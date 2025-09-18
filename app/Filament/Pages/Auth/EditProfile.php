@@ -136,7 +136,8 @@ class EditProfile extends BaseEditProfile
                                 Forms\Components\TextInput::make('password_confirmation')
                                     ->label('Ulangi Password')
                                     ->password()
-                                    ->same('password'),
+                                    ->same('password')
+                                    ->dehydrated(false),
                                 Forms\Components\TextInput::make('desa')
                                     ->label('Desa')
                                     ->required()
