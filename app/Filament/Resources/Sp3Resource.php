@@ -301,9 +301,9 @@ class Sp3Resource extends Resource
                     ->icon('heroicon-o-document-text')
                     ->color('info')
                     ->visible(function ($record) {
-                        return $record->provinsi_verified_at && $record->no_sp3;
+                        return $record->provinsi_verified_at && $record->no_sp3 && $record->sp3;
                     })
-                    ->url(fn($record) => route('filament.admin.resources.sp3.view', $record))
+                    ->url(fn($record) => \Illuminate\Support\Facades\Storage::url($record->sp3))
                     ->openUrlInNewTab(),
                 Tables\Actions\Action::make('perpanjang_sp3')
                     ->label('Perpanjang SP3')
