@@ -256,8 +256,8 @@ class ViewSp3 extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('download_sp3')
-                ->label('Download SP3')
+            Action::make('draft_sp3')
+                ->label('Draft SP3')
                 ->icon('heroicon-o-document-arrow-down')
                 ->visible(fn() => !$this->record->is_pernah_daftar)
                 ->action(function () {
