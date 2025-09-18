@@ -245,11 +245,35 @@ class Sp3Resource extends Resource
                         Forms\Components\Textarea::make('catatan')
                             ->label('Catatan Verifikasi')
                             ->required(),
+                        Forms\Components\FileUpload::make('rekomendasi_keswan')
+                            ->label('Surat Rekomendasi Keswan')
+                            ->required()
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                            ->maxSize(10240) // 10MB
+                            ->directory('rekomendasi-keswan')
+                            ->visibility('private')
+                            ->downloadable()
+                            ->openable()
+                            ->previewable(false)
+                            ->helperText('Upload surat rekomendasi keswan (PDF, JPG, PNG - maksimal 10MB)'),
+                        Forms\Components\FileUpload::make('surat_kandang_penampungan')
+                            ->label('Surat Keterangan Kandang/Gudang')
+                            ->required()
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                            ->maxSize(10240) // 10MB
+                            ->directory('surat-kandang')
+                            ->visibility('private')
+                            ->downloadable()
+                            ->openable()
+                            ->previewable(false)
+                            ->helperText('Upload surat keterangan kandang/gudang (PDF, JPG, PNG - maksimal 10MB)'),
                     ])
                     ->action(function (array $data, $record) {
                         $record->update([
                             'kab_kota_verified_at' => now(),
                             'kab_kota_verified_by' => auth()->id(),
+                            'rekomendasi_keswan' => $data['rekomendasi_keswan'],
+                            'surat_kandang_penampungan' => $data['surat_kandang_penampungan'],
                         ]);
                         
                         \Filament\Notifications\Notification::make()
@@ -373,12 +397,30 @@ class Sp3Resource extends Resource
                         Forms\Components\Textarea::make('catatan')
                             ->label('Catatan Verifikasi')
                             ->required(),
+                        Forms\Components\FileUpload::make('rekomendasi_keswan_template')
+                            ->label('Template Surat Rekomendasi Keswan')
+                            ->required()
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                            ->maxSize(10240) // 10MB
+                            ->directory('rekomendasi-keswan')
+                            ->visibility('private')
+                            ->helperText('Upload template surat rekomendasi keswan (PDF, JPG, PNG - maksimal 10MB)'),
+                        Forms\Components\FileUpload::make('surat_kandang_template')
+                            ->label('Template Surat Keterangan Kandang/Gudang')
+                            ->required()
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                            ->maxSize(10240) // 10MB
+                            ->directory('surat-kandang')
+                            ->visibility('private')
+                            ->helperText('Upload template surat keterangan kandang/gudang (PDF, JPG, PNG - maksimal 10MB)'),
                     ])
                     ->action(function (array $data, $records) {
                         $records->each(function ($record) use ($data) {
                             $record->update([
                                 'kab_kota_verified_at' => now(),
                                 'kab_kota_verified_by' => auth()->id(),
+                                'rekomendasi_keswan' => $data['rekomendasi_keswan_template'],
+                                'surat_kandang_penampungan' => $data['surat_kandang_template'],
                             ]);
                         });
                         

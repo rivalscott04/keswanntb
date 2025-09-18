@@ -196,6 +196,35 @@ class ViewSp3 extends ViewRecord
                             ]),
                     ]),
 
+                Section::make('Dokumen Kabupaten/Kota')
+                    ->visible(fn($record) => $record->kab_kota_verified_at)
+                    ->schema([
+                        TextEntry::make('rekomendasi_keswan')
+                            ->label('Surat Rekomendasi Keswan')
+                            ->formatStateUsing(function ($state) {
+                                if (!$state)
+                                    return 'Belum diunggah';
+                                return new \Illuminate\Support\HtmlString(
+                                    view('filament.components.document-link', [
+                                        'url' => Storage::url($state),
+                                        'label' => 'Lihat Dokumen'
+                                    ])->render()
+                                );
+                            }),
+                        TextEntry::make('surat_kandang_penampungan')
+                            ->label('Surat Keterangan Kandang/Gudang')
+                            ->formatStateUsing(function ($state) {
+                                if (!$state)
+                                    return 'Belum diunggah';
+                                return new \Illuminate\Support\HtmlString(
+                                    view('filament.components.document-link', [
+                                        'url' => Storage::url($state),
+                                        'label' => 'Lihat Dokumen'
+                                    ])->render()
+                                );
+                            }),
+                    ]),
+
                 Section::make('Dokumen Pendukung')
                     ->schema([
                         TextEntry::make('dokumen_pendukung')
@@ -326,11 +355,36 @@ class ViewSp3 extends ViewRecord
                            !$this->record->kab_kota_verified_at &&
                            $this->record->wewenang->nama === 'Pengguna';
                 })
-                ->requiresConfirmation()
+                ->form([
+                    FileUpload::make('rekomendasi_keswan')
+                        ->label('Surat Rekomendasi Keswan')
+                        ->required()
+                        ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                        ->maxSize(10240) // 10MB
+                        ->directory('rekomendasi-keswan')
+                        ->visibility('private')
+                        ->downloadable()
+                        ->openable()
+                        ->previewable(false)
+                        ->helperText('Upload surat rekomendasi keswan (PDF, JPG, PNG - maksimal 10MB)'),
+                    FileUpload::make('surat_kandang_penampungan')
+                        ->label('Surat Keterangan Kandang/Gudang')
+                        ->required()
+                        ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                        ->maxSize(10240) // 10MB
+                        ->directory('surat-kandang')
+                        ->visibility('private')
+                        ->downloadable()
+                        ->openable()
+                        ->previewable(false)
+                        ->helperText('Upload surat keterangan kandang/gudang (PDF, JPG, PNG - maksimal 10MB)'),
+                ])
                 ->action(function (array $data) {
                     $this->record->update([
                         'kab_kota_verified_at' => now(),
                         'kab_kota_verified_by' => auth()->id(),
+                        'rekomendasi_keswan' => $data['rekomendasi_keswan'],
+                        'surat_kandang_penampungan' => $data['surat_kandang_penampungan'],
                     ]);
 
                     Notification::make()
