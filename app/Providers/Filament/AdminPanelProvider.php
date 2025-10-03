@@ -57,6 +57,7 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->registration(\App\Filament\Pages\Auth\Register::class)
+            ->passwordReset()
             ->profile(EditProfile::class, isSimple: false);
     }
 }
