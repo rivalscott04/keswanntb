@@ -347,6 +347,10 @@ class ViewSp3 extends ViewRecord
                 ->color('success')
                 ->visible(function() {
                     $user = auth()->user();
+                    // Skip kab/kota verification for users who have registered before
+                    if ($this->record->is_pernah_daftar) {
+                        return false;
+                    }
                     if ($user->wewenang->nama === 'Administrator' && !$this->record->kab_kota_verified_at) {
                         return true;
                     }
@@ -398,6 +402,16 @@ class ViewSp3 extends ViewRecord
                 ->color('success')
                 ->visible(function() {
                     $user = auth()->user();
+                    // Allow direct provinsi verification for users who have registered before
+                    if ($this->record->is_pernah_daftar) {
+                        if ($user->wewenang->nama === 'Administrator' && !$this->record->provinsi_verified_at) {
+                            return true;
+                        }
+                        return $user->wewenang->nama === 'Disnak Provinsi' &&
+                               !$this->record->provinsi_verified_at &&
+                               $this->record->wewenang->nama === 'Pengguna';
+                    }
+                    // For new users, require kab/kota verification first
                     if ($user->wewenang->nama === 'Administrator' && $this->record->kab_kota_verified_at && !$this->record->provinsi_verified_at) {
                         return true;
                     }

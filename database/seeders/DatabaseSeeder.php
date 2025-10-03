@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             JenisTernakSeeder::class,
             KuotaSeeder::class,
             PengaturanSeeder::class,
+            ExistingUserSeeder::class,
         ]);
     }
 }

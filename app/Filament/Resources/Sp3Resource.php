@@ -116,8 +116,9 @@ class Sp3Resource extends Resource
             });
 
         if ($user->wewenang->nama === 'Disnak Kab/Kota') {
-            // Disnak Kab/Kota hanya melihat user dari kab/kota yang sama
-            return $query->where('kab_kota_id', $user->kab_kota_id);
+            // Disnak Kab/Kota hanya melihat user dari kab/kota yang sama dan yang belum pernah mendaftar
+            return $query->where('kab_kota_id', $user->kab_kota_id)
+                        ->where('is_pernah_daftar', false);
         }
 
         return $query;
@@ -208,6 +209,10 @@ class Sp3Resource extends Resource
                     ->query(fn(Builder $query): Builder => $query->whereNull('provinsi_verified_at'))
                     ->visible(fn() => auth()->user()->wewenang->nama === 'Disnak Provinsi')
                     ->default(),
+                Filter::make('sudah_pernah_daftar')
+                    ->label('Sudah Pernah Mendaftar')
+                    ->query(fn(Builder $query): Builder => $query->where('is_pernah_daftar', true))
+                    ->visible(fn() => auth()->user()->wewenang->nama === 'Disnak Provinsi'),
                 Filter::make('verified_kab_kota')
                     ->label('Sudah Terverifikasi Kab/Kota')
                     ->query(fn(Builder $query): Builder => $query->whereNotNull('kab_kota_verified_at'))
@@ -237,6 +242,10 @@ class Sp3Resource extends Resource
                     ->color('success')
                     ->visible(function ($record) {
                         $user = auth()->user();
+                        // Skip kab/kota verification for users who have registered before
+                        if ($record->is_pernah_daftar) {
+                            return false;
+                        }
                         return $user->wewenang->nama === 'Disnak Kab/Kota' &&
                                $user->kab_kota_id === $record->kab_kota_id &&
                                !$record->kab_kota_verified_at;
@@ -287,6 +296,12 @@ class Sp3Resource extends Resource
                     ->color('success')
                     ->visible(function ($record) {
                         $user = auth()->user();
+                        // Allow direct provinsi verification for users who have registered before
+                        if ($record->is_pernah_daftar) {
+                            return $user->wewenang->nama === 'Disnak Provinsi' &&
+                                   !$record->provinsi_verified_at;
+                        }
+                        // For new users, require kab/kota verification first
                         return $user->wewenang->nama === 'Disnak Provinsi' &&
                                $record->kab_kota_verified_at &&
                                !$record->provinsi_verified_at;
@@ -539,12 +554,23 @@ class Sp3Resource extends Resource
         if ($user->wewenang->nama === 'Disnak Kab/Kota') {
             $count = User::where('wewenang_id', 5) // Pengguna
                 ->where('kab_kota_id', $user->kab_kota_id)
+                ->where('is_pernah_daftar', false)
                 ->whereNull('kab_kota_verified_at')
                 ->count();
         } elseif ($user->wewenang->nama === 'Disnak Provinsi') {
             $count = User::where('wewenang_id', 5) // Pengguna
-                ->whereNotNull('kab_kota_verified_at')
-                ->whereNull('provinsi_verified_at')
+                ->where(function($query) {
+                    $query->where(function($q) {
+                        // New users who need kab/kota verification first
+                        $q->where('is_pernah_daftar', false)
+                          ->whereNotNull('kab_kota_verified_at')
+                          ->whereNull('provinsi_verified_at');
+                    })->orWhere(function($q) {
+                        // Existing users who can be verified directly
+                        $q->where('is_pernah_daftar', true)
+                          ->whereNull('provinsi_verified_at');
+                    });
+                })
                 ->count();
         } else {
             return null;
@@ -560,12 +586,23 @@ class Sp3Resource extends Resource
         if ($user->wewenang->nama === 'Disnak Kab/Kota') {
             $count = User::where('wewenang_id', 5) // Pengguna
                 ->where('kab_kota_id', $user->kab_kota_id)
+                ->where('is_pernah_daftar', false)
                 ->whereNull('kab_kota_verified_at')
                 ->count();
         } elseif ($user->wewenang->nama === 'Disnak Provinsi') {
             $count = User::where('wewenang_id', 5) // Pengguna
-                ->whereNotNull('kab_kota_verified_at')
-                ->whereNull('provinsi_verified_at')
+                ->where(function($query) {
+                    $query->where(function($q) {
+                        // New users who need kab/kota verification first
+                        $q->where('is_pernah_daftar', false)
+                          ->whereNotNull('kab_kota_verified_at')
+                          ->whereNull('provinsi_verified_at');
+                    })->orWhere(function($q) {
+                        // Existing users who can be verified directly
+                        $q->where('is_pernah_daftar', true)
+                          ->whereNull('provinsi_verified_at');
+                    });
+                })
                 ->count();
         } else {
             return null;
