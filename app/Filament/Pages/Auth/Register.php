@@ -13,6 +13,8 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Storage;
 use Filament\Notifications\Notification;
 use Filament\Pages\Auth\Register as BaseRegister;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\Rule;
 
 class Register extends BaseRegister
 {
@@ -86,7 +88,9 @@ class Register extends BaseRegister
                                 Forms\Components\TextInput::make('no_npwp')
                                     ->label('Nomor NPWP'),
                                 Forms\Components\TextInput::make('telepon')
-                                    ->label('Telepon/HP/Faximile'),
+                                    ->label('Telepon/HP/Faximile')
+                                    ->unique(User::class, 'telepon')
+                                    ->tel(),
                                 Forms\Components\FileUpload::make('rekomendasi_keswan')
                                     ->label('Rekomendasi Kab/Kota')
                                     ->acceptedFileTypes(['application/pdf'])
@@ -106,11 +110,15 @@ class Register extends BaseRegister
                                     ->required(),
                                 Forms\Components\TextInput::make('nik')
                                     ->label('NIK')
-                                    ->required(),
+                                    ->required()
+                                    ->unique(User::class, 'nik')
+                                    ->numeric()
+                                    ->length(16),
                                 Forms\Components\TextInput::make('email')
                                     ->label('Email')
                                     ->email()
                                     ->required()
+                                    ->unique(User::class, 'email')
                                     ->columnSpanFull(),
                                 Forms\Components\TextInput::make('password')
                                     ->label('Password')
@@ -132,7 +140,9 @@ class Register extends BaseRegister
                                     ->required(),
                                 Forms\Components\TextInput::make('no_hp')
                                     ->label('Nomor HP')
-                                    ->required(),
+                                    ->required()
+                                    ->unique(User::class, 'no_hp')
+                                    ->tel(),
                             ])->columns(),
                         Forms\Components\Section::make('Dokumen Pendukung')
                             ->schema([
@@ -147,21 +157,63 @@ class Register extends BaseRegister
 
     protected function handleRegistration(array $data): User
     {
-        $data['wewenang_id'] = Wewenang::where('nama', 'Pengguna')->first()->id;
-        $data['password'] = Hash::make($data['password']);
-        unset($data['password_confirmation']);
-        if (App::environment('local')) {
-            $data['email_verified_at'] = now();
+        try {
+            $data['wewenang_id'] = Wewenang::where('nama', 'Pengguna')->first()->id;
+            $data['password'] = Hash::make($data['password']);
+            unset($data['password_confirmation']);
+            if (App::environment('local')) {
+                $data['email_verified_at'] = now();
+            }
+            $user = User::create($data);
+            if (App::environment('production')) {
+                event(new Registered($user));
+            }
+            Notification::make()
+                ->title('Pendaftaran berhasil!')
+                ->success()
+                ->body('Silakan menunggu persetujuan akun Anda.')
+                ->send();
+            return $user;
+        } catch (QueryException $e) {
+            // Handle unique constraint violations
+            if ($e->getCode() == 23000) {
+                $errorMessage = $e->getMessage();
+                $title = 'Data sudah terdaftar!';
+                $body = 'Data yang Anda masukkan sudah terdaftar dalam sistem. Silakan periksa kembali atau gunakan data lain.';
+                
+                // Check which field caused the duplicate error
+                if (str_contains($errorMessage, 'users_email_unique')) {
+                    $title = 'Email sudah terdaftar!';
+                    $body = 'Email yang Anda gunakan sudah terdaftar dalam sistem. Silakan gunakan email lain atau hubungi administrator.';
+                } elseif (str_contains($errorMessage, 'users_nik_unique')) {
+                    $title = 'NIK sudah terdaftar!';
+                    $body = 'NIK yang Anda masukkan sudah terdaftar dalam sistem. Silakan periksa kembali NIK Anda.';
+                } elseif (str_contains($errorMessage, 'users_no_hp_unique')) {
+                    $title = 'Nomor HP sudah terdaftar!';
+                    $body = 'Nomor HP yang Anda masukkan sudah terdaftar dalam sistem. Silakan gunakan nomor HP lain.';
+                } elseif (str_contains($errorMessage, 'users_telepon_unique')) {
+                    $title = 'Nomor telepon sudah terdaftar!';
+                    $body = 'Nomor telepon yang Anda masukkan sudah terdaftar dalam sistem. Silakan gunakan nomor telepon lain.';
+                }
+                
+                Notification::make()
+                    ->title($title)
+                    ->danger()
+                    ->body($body)
+                    ->send();
+                
+                // Re-throw the exception to prevent form submission
+                throw $e;
+            }
+            
+            // Handle other database errors
+            Notification::make()
+                ->title('Terjadi kesalahan!')
+                ->danger()
+                ->body('Terjadi kesalahan saat mendaftar. Silakan coba lagi atau hubungi administrator.')
+                ->send();
+            
+            throw $e;
         }
-        $user = User::create($data);
-        if (App::environment('production')) {
-            event(new Registered($user));
-        }
-        Notification::make()
-            ->title('Pendaftaran berhasil!')
-            ->success()
-            ->body('Silakan menunggu persetujuan akun Anda.')
-            ->send();
-        return $user;
     }
 }
