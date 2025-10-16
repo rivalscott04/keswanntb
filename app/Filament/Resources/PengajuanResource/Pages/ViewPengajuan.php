@@ -10,6 +10,11 @@ use Filament\Resources\Pages\ViewRecord;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use App\Filament\Resources\PengajuanResource;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use App\Models\DokumenPengajuan;
+use Filament\Notifications\Notification;
 
 class ViewPengajuan extends ViewRecord
 {
@@ -36,10 +41,22 @@ class ViewPengajuan extends ViewRecord
     {
         $user = auth()->user();
         return [
+            Actions\Action::make('approve')
+                ->label('Approve')
+                ->icon('heroicon-o-check-circle')
+                ->color('success')
+                ->visible(fn($record) => $record->canApproveBy($user))
+                ->form([
+                    Textarea::make('catatan')
+                        ->label('Catatan Persetujuan')
+                        ->required(),
+                ])
+                ->action(fn(array $data) => PengajuanService::approve($this->record, auth()->user(), $data)),
+            
             Actions\Action::make('verifikasi')
                 ->label('Verifikasi')
                 ->icon('heroicon-o-check')
-                ->color('success')
+                ->color('info')
                 ->visible(fn($record) => $record->canVerifyBy($user))
                 ->form([
                     Textarea::make('catatan')
@@ -73,6 +90,54 @@ class ViewPengajuan extends ViewRecord
                         ->required(),
                 ])
                 ->action(fn(array $data) => PengajuanService::ajukanKembali($this->record, auth()->user(), $data)),
+            
+            // Action untuk upload dokumen
+            Actions\Action::make('upload_dokumen')
+                ->label('Upload Dokumen')
+                ->icon('heroicon-o-document-plus')
+                ->color('info')
+                ->visible(fn($record) => $this->canUploadDocument($record, $user))
+                ->form([
+                    Select::make('jenis_dokumen')
+                        ->label('Jenis Dokumen')
+                        ->options(fn($record) => $this->getAvailableDocumentTypes($record, $user))
+                        ->required(),
+                    
+                    FileUpload::make('path_file')
+                        ->label('File Dokumen')
+                        ->disk('public')
+                        ->directory('dokumen-pengajuan')
+                        ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                        ->maxSize(10240) // 10MB
+                        ->visibility('private')
+                        ->required(),
+                    
+                    TextInput::make('keterangan')
+                        ->label('Keterangan')
+                        ->maxLength(500),
+                ])
+                ->action(function (array $data) {
+                    $file = $data['path_file'];
+                    $filePath = is_array($file) ? $file[0] : $file;
+                    
+                    DokumenPengajuan::create([
+                        'pengajuan_id' => $this->record->id,
+                        'user_id' => auth()->id(),
+                        'jenis_dokumen' => $data['jenis_dokumen'],
+                        'nama_file' => $filePath,
+                        'path_file' => $filePath,
+                        'ukuran_file' => filesize(storage_path('app/public/' . $filePath)),
+                        'tipe_file' => pathinfo($filePath, PATHINFO_EXTENSION),
+                        'keterangan' => $data['keterangan'] ?? null,
+                        'status' => 'aktif',
+                    ]);
+                    
+                    Notification::make()
+                        ->title('Dokumen berhasil diupload')
+                        ->success()
+                        ->send();
+                }),
+            
             Actions\EditAction::make()
                 ->visible(fn($record) => ($user->id === $record->user_id && in_array($record->status, ['menunggu', 'ditolak'])) || $user->is_admin),
         ];
@@ -134,6 +199,136 @@ class ViewPengajuan extends ViewRecord
                             ->html()
                             ->visible(fn($state) => $state),
                     ])->columns(2),
+                
+                // Section untuk dokumen yang diupload oleh dinas
+                Section::make('Dokumen dari Dinas')
+                    ->schema([
+                        TextEntry::make('dokumen_pengajuan')
+                            ->label('Dokumen')
+                            ->formatStateUsing(function ($record) {
+                                $dokumen = $record->dokumenPengajuan()->aktif()->get();
+                                if ($dokumen->isEmpty()) {
+                                    return 'Belum ada dokumen yang diupload';
+                                }
+                                
+                                $html = '<div class="space-y-2">';
+                                foreach ($dokumen as $doc) {
+                                    $html .= '<div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">';
+                                    $html .= '<div>';
+                                    $html .= '<span class="font-medium">' . $doc->nama_file_display . '</span><br>';
+                                    $html .= '<span class="text-sm text-gray-500">Uploaded by: ' . $doc->user->name . '</span>';
+                                    $html .= '</div>';
+                                    $html .= '<a href="' . $doc->url_download . '" target="_blank" class="text-primary-600 dark:text-primary-400 hover:underline">Download</a>';
+                                    $html .= '</div>';
+                                }
+                                $html .= '</div>';
+                                
+                                return $html;
+                            })
+                            ->html(),
+                    ])
+                    ->visible(fn($record) => $record->dokumenPengajuan()->aktif()->exists()),
             ]);
+    }
+
+    /**
+     * Cek apakah user bisa upload dokumen
+     */
+    private function canUploadDocument($record, $user): bool
+    {
+        // Admin bisa upload kapan saja
+        if ($user->is_admin) {
+            return true;
+        }
+
+        // Cek berdasarkan wewenang dan status pengajuan
+        if ($user->wewenang->nama === 'Disnak Kab/Kota') {
+            // Dinas kab/kota bisa upload setelah pengajuan disetujui
+            return in_array($record->status, ['disetujui', 'selesai']);
+        }
+
+        if ($user->wewenang->nama === 'Disnak Provinsi') {
+            // Dinas provinsi bisa upload setelah pengajuan disetujui
+            return in_array($record->status, ['disetujui', 'selesai']);
+        }
+
+        if ($user->wewenang->nama === 'DPMPTSP') {
+            // DPMPTSP bisa upload setelah verifikasi
+            return $record->status === 'disetujui';
+        }
+
+        return false;
+    }
+
+    /**
+     * Get jenis dokumen yang bisa diupload berdasarkan user dan status
+     */
+    private function getAvailableDocumentTypes($record, $user): array
+    {
+        $types = [];
+
+        if ($user->wewenang->nama === 'Disnak Kab/Kota') {
+            if ($record->jenis_pengajuan === 'pengeluaran') {
+                // Untuk pengeluaran, kab/kota asal upload semua dokumen
+                if ($user->kab_kota_id === $record->kab_kota_asal_id) {
+                    $types = [
+                        'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                        'skkh' => 'SKKH',
+                        'surat_keterangan_veteriner' => 'Surat Keterangan Veteriner',
+                        'dokumen_lainnya' => 'Dokumen Lainnya',
+                    ];
+                }
+            } elseif ($record->jenis_pengajuan === 'pemasukan') {
+                // Untuk pemasukan, kab/kota tujuan upload rekomendasi saja
+                if ($user->kab_kota_id === $record->kab_kota_tujuan_id) {
+                    $types = [
+                        'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                    ];
+                }
+            } else {
+                // Antar kab/kota
+                if ($user->kab_kota_id === $record->kab_kota_asal_id) {
+                    // Kab/kota asal upload semua dokumen
+                    $types = [
+                        'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                        'skkh' => 'SKKH',
+                        'surat_keterangan_veteriner' => 'Surat Keterangan Veteriner',
+                        'dokumen_lainnya' => 'Dokumen Lainnya',
+                    ];
+                } elseif ($user->kab_kota_id === $record->kab_kota_tujuan_id) {
+                    // Kab/kota tujuan upload rekomendasi saja
+                    $types = [
+                        'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                    ];
+                }
+            }
+        }
+
+        if ($user->wewenang->nama === 'Disnak Provinsi') {
+            // Provinsi upload rekomendasi saja
+            $types = [
+                'rekomendasi_keswan' => 'Rekomendasi Keswan',
+            ];
+        }
+
+        if ($user->wewenang->nama === 'DPMPTSP') {
+            // DPMPTSP upload izin
+            if ($record->jenis_pengajuan === 'pengeluaran') {
+                $types = [
+                    'izin_pengeluaran' => 'Izin Pengeluaran',
+                ];
+            } elseif ($record->jenis_pengajuan === 'pemasukan') {
+                $types = [
+                    'izin_pemasukan' => 'Izin Pemasukan',
+                ];
+            } else {
+                $types = [
+                    'izin_pengeluaran' => 'Izin Pengeluaran',
+                    'izin_pemasukan' => 'Izin Pemasukan',
+                ];
+            }
+        }
+
+        return $types;
     }
 }

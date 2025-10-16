@@ -23,6 +23,8 @@ class DatabaseSeeder extends Seeder
             KuotaSeeder::class,
             PengaturanSeeder::class,
             ExistingUserSeeder::class,
+            ContohDataSeeder::class,
+            DokumenDummySeeder::class,
         ]);
     }
 }

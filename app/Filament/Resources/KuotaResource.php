@@ -31,7 +31,17 @@ class KuotaResource extends Resource
             ->schema([
                 Forms\Components\Select::make('jenis_ternak_id')
                     ->label('Jenis Ternak')
-                    ->relationship('jenisTernak', 'nama')
+                    ->options(function () {
+                        return \App\Models\JenisTernak::with('kategoriTernak')
+                            ->get()
+                            ->groupBy('kategoriTernak.nama')
+                            ->map(function ($jenisTernakGroup, $kategoriNama) {
+                                return $jenisTernakGroup->pluck('nama', 'id');
+                            })
+                            ->toArray();
+                    })
+                    ->searchable()
+                    ->preload()
                     ->required(),
                 Forms\Components\Select::make('jenis_kelamin')
                     ->label('Jenis Kelamin')

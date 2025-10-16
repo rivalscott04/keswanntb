@@ -70,21 +70,58 @@ class Pengajuan extends Model
         return $this->hasMany(HistoriPengajuan::class);
     }
 
+    public function penggunaanKuota(): HasMany
+    {
+        return $this->hasMany(PenggunaanKuota::class);
+    }
+
+    public function dokumenPengajuan(): HasMany
+    {
+        return $this->hasMany(DokumenPengajuan::class);
+    }
+
     public function getKuotaTersediaAttribute()
     {
-        $kuotaPemasukan = \App\Models\Kuota::where('tahun', $this->tahun_pengajuan)
-            ->where('jenis_ternak_id', $this->jenis_ternak_id)
-            ->where('kab_kota_id', $this->kab_kota_tujuan_id)
-            ->where('jenis_kelamin', $this->jenis_kelamin)
-            ->where('jenis_kuota', 'pemasukan')
-            ->value('kuota') ?? 0;
+        // Cek apakah kab/kota asal atau tujuan ada di pulau Lombok
+        $kabKotaAsal = $this->kabKotaAsal;
+        $kabKotaTujuan = $this->kabKotaTujuan;
+        
+        $isLombokAsal = $kabKotaAsal && $kabKotaAsal->kuotas()->where('pulau', 'Lombok')->exists();
+        $isLombokTujuan = $kabKotaTujuan && $kabKotaTujuan->kuotas()->where('pulau', 'Lombok')->exists();
 
-        $kuotaPengeluaran = \App\Models\Kuota::where('tahun', $this->tahun_pengajuan)
-            ->where('jenis_ternak_id', $this->jenis_ternak_id)
-            ->where('kab_kota_id', $this->kab_kota_asal_id)
-            ->where('jenis_kelamin', $this->jenis_kelamin)
-            ->where('jenis_kuota', 'pengeluaran')
-            ->value('kuota') ?? 0;
+        if ($isLombokAsal || $isLombokTujuan) {
+            // Untuk pulau Lombok, gunakan logika khusus
+            $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                $this->tahun_pengajuan,
+                $this->jenis_ternak_id,
+                $this->jenis_kelamin,
+                'pemasukan'
+            );
+
+            $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                $this->tahun_pengajuan,
+                $this->jenis_ternak_id,
+                $this->jenis_kelamin,
+                'pengeluaran'
+            );
+        } else {
+            // Logika normal untuk kab/kota lain
+            $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
+                $this->tahun_pengajuan,
+                $this->jenis_ternak_id,
+                $this->kab_kota_tujuan_id,
+                $this->jenis_kelamin,
+                'pemasukan'
+            );
+
+            $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisa(
+                $this->tahun_pengajuan,
+                $this->jenis_ternak_id,
+                $this->kab_kota_asal_id,
+                $this->jenis_kelamin,
+                'pengeluaran'
+            );
+        }
 
         return min($kuotaPemasukan, $kuotaPengeluaran);
     }
@@ -164,6 +201,38 @@ class Pengajuan extends Model
             return in_array($this->status, ['menunggu', 'diproses']) &&
                 $user->wewenang->nama === 'Disnak Provinsi';
         }
+        return false;
+    }
+
+    public function canApproveBy($user)
+    {
+        if ($user->is_admin) {
+            return in_array($this->status, ['menunggu', 'diproses']);
+        }
+
+        // Untuk pengajuan pengeluaran, dinas kab/kota asal bisa approve
+        if ($this->jenis_pengajuan === 'pengeluaran' && $this->tahapVerifikasi->urutan === 2) {
+            return in_array($this->status, ['menunggu', 'diproses']) &&
+                !$this->is_kuota_penuh &&
+                $user->wewenang->nama === 'Disnak Kab/Kota' &&
+                $user->kab_kota_id === $this->kab_kota_asal_id;
+        }
+
+        // Untuk pengajuan pemasukan, dinas kab/kota tujuan bisa approve
+        if ($this->jenis_pengajuan === 'pemasukan' && $this->tahapVerifikasi->urutan === 3) {
+            return in_array($this->status, ['menunggu', 'diproses']) &&
+                !$this->is_kuota_penuh &&
+                $user->wewenang->nama === 'Disnak Kab/Kota' &&
+                $user->kab_kota_id === $this->kab_kota_tujuan_id;
+        }
+
+        // Untuk pengajuan pemasukan, disnak provinsi bisa approve
+        if ($this->jenis_pengajuan === 'pemasukan' && $this->tahapVerifikasi->urutan === 4) {
+            return in_array($this->status, ['menunggu', 'diproses']) &&
+                !$this->is_kuota_penuh &&
+                $user->wewenang->nama === 'Disnak Provinsi';
+        }
+
         return false;
     }
 

@@ -109,7 +109,8 @@ class PengajuanResource extends Resource
                         Forms\Components\TextInput::make('pelabuhan_asal_lainnya')
                             ->label('Nama Pelabuhan Asal (Lainnya)')
                             ->visible(fn(callable $get) => $get('pelabuhan_asal') === 'Lainnya')
-                            ->required(fn(callable $get) => $get('pelabuhan_asal') === 'Lainnya'),
+                            ->required(fn(callable $get) => $get('pelabuhan_asal') === 'Lainnya')
+                            ->columnSpanFull(),
 
                         Forms\Components\Select::make('kab_kota_tujuan_id')
                             ->label('Kab/Kota Tujuan Ternak')
@@ -150,7 +151,8 @@ class PengajuanResource extends Resource
                         Forms\Components\TextInput::make('pelabuhan_tujuan_lainnya')
                             ->label('Nama Pelabuhan Tujuan (Lainnya)')
                             ->visible(fn(callable $get) => $get('pelabuhan_tujuan') === 'Lainnya')
-                            ->required(fn(callable $get) => $get('pelabuhan_tujuan') === 'Lainnya'),
+                            ->required(fn(callable $get) => $get('pelabuhan_tujuan') === 'Lainnya')
+                            ->columnSpanFull(),
                     ])->columns(),
 
                 Forms\Components\Section::make('Informasi Ternak')
@@ -214,15 +216,11 @@ class PengajuanResource extends Resource
                             ->label('Tanggal Surat Permohonan Perusahaan')
                             ->required(),
 
-                        Forms\Components\FileUpload::make('skkh')
-                            ->label('SKKH')
-                            ->disk('public')
-                            ->directory('pengajuan/skkh')
-                            ->acceptedFileTypes(['application/pdf']),
-
+                        // SKKH akan diupload oleh dinas kab/kota asal ternak
                         Forms\Components\TextInput::make('nomor_skkh')
                             ->label('No. SKKH')
-                            ->required(),
+                            ->required()
+                            ->helperText('SKKH akan diupload oleh dinas kab/kota asal ternak'),
 
                         Forms\Components\FileUpload::make('hasil_uji_lab')
                             ->label('Hasil Uji Lab')

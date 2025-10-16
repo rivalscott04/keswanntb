@@ -6,6 +6,7 @@ use App\Models\Pengajuan;
 use App\Models\TahapVerifikasi;
 use App\Models\HistoriPengajuan;
 use App\Models\Kuota;
+use App\Models\PenggunaanKuota;
 use Filament\Notifications\Notification;
 
 class PengajuanService
@@ -45,20 +46,14 @@ class PengajuanService
             'catatan' => $data['catatan'] ?? null,
         ]);
 
-        // Jika tahap saat ini Disnak Provinsi, lakukan pengurangan kuota dan update status ke 'disetujui', lalu lanjut ke DPMPTSP
+        // Jika tahap saat ini Disnak Provinsi, lakukan pencatatan penggunaan kuota dan update status ke 'disetujui', lalu lanjut ke DPMPTSP
         if ($record->tahapVerifikasi->nama === 'Disnak Provinsi') {
-            // Kurangi kuota asal
-            Kuota::where('kab_kota_id', $record->kab_kota_asal_id)
-                ->where('jenis_ternak_id', $record->jenis_ternak_id)
-                ->where('jenis_kelamin', $record->jenis_kelamin)
-                ->where('jenis_kuota', 'keluar')
-                ->decrement('kuota', $record->jumlah_ternak);
-            // Kurangi kuota tujuan
-            Kuota::where('kab_kota_id', $record->kab_kota_tujuan_id)
-                ->where('jenis_ternak_id', $record->jenis_ternak_id)
-                ->where('jenis_kelamin', $record->jenis_kelamin)
-                ->where('jenis_kuota', 'masuk')
-                ->decrement('kuota', $record->jumlah_ternak);
+            // Catat penggunaan kuota pengeluaran
+            self::catatPenggunaanKuota($record, 'pengeluaran');
+            
+            // Catat penggunaan kuota pemasukan
+            self::catatPenggunaanKuota($record, 'pemasukan');
+            
             $record->update([
                 'tahap_verifikasi_id' => $tahapBerikutnya->id,
                 'status' => 'disetujui',
@@ -76,6 +71,60 @@ class PengajuanService
         }
         Notification::make()
             ->title('Pengajuan berhasil diverifikasi')
+            ->success()
+            ->send();
+    }
+
+    public static function approve(Pengajuan $record, $user, array $data)
+    {
+        $tahapBerikutnya = TahapVerifikasi::where('urutan', $record->tahapVerifikasi->urutan + 1)
+            ->orderBy('urutan')
+            ->first();
+
+        // Skip tahap "Disnak Kab/Kota NTB Tujuan" jika pengeluaran
+        if (
+            $record->jenis_pengajuan === 'pengeluaran' &&
+            $tahapBerikutnya &&
+            str_contains(strtolower($tahapBerikutnya->nama), 'tujuan')
+        ) {
+            $tahapBerikutnya = TahapVerifikasi::where('urutan', $tahapBerikutnya->urutan + 1)
+                ->orderBy('urutan')
+                ->first();
+        }
+        // Skip tahap "Disnak Kab/Kota NTB Asal" jika pemasukan
+        if (
+            $record->jenis_pengajuan === 'pemasukan' &&
+            $tahapBerikutnya &&
+            str_contains(strtolower($tahapBerikutnya->nama), 'asal')
+        ) {
+            $tahapBerikutnya = TahapVerifikasi::where('urutan', $tahapBerikutnya->urutan + 1)
+                ->orderBy('urutan')
+                ->first();
+        }
+
+        HistoriPengajuan::create([
+            'pengajuan_id' => $record->id,
+            'tahap_verifikasi_id' => $record->tahap_verifikasi_id,
+            'user_id' => $user->id,
+            'status' => 'disetujui',
+            'catatan' => $data['catatan'] ?? null,
+        ]);
+
+        // Update status pengajuan
+        if ($tahapBerikutnya) {
+            $record->update([
+                'tahap_verifikasi_id' => $tahapBerikutnya->id,
+                'status' => 'diproses',
+            ]);
+        } else {
+            // Jika tidak ada tahap berikutnya, set status ke disetujui
+            $record->update([
+                'status' => 'disetujui',
+            ]);
+        }
+
+        Notification::make()
+            ->title('Pengajuan berhasil disetujui')
             ->success()
             ->send();
     }
@@ -170,5 +219,52 @@ class PengajuanService
                 ->where('status', 'ditolak');
         }
         return $query;
+    }
+
+    /**
+     * Catat penggunaan kuota untuk pengajuan
+     */
+    public static function catatPenggunaanKuota(Pengajuan $pengajuan, $jenisPenggunaan)
+    {
+        $kabKotaId = $jenisPenggunaan === 'pengeluaran' 
+            ? $pengajuan->kab_kota_asal_id 
+            : $pengajuan->kab_kota_tujuan_id;
+
+        // Cek apakah kab/kota ada di pulau Lombok
+        $kabKota = \App\Models\KabKota::find($kabKotaId);
+        $isLombok = $kabKota && $kabKota->kuotas()->where('pulau', 'Lombok')->exists();
+
+        // Ambil kuota yang sesuai
+        $kuota = Kuota::where('tahun', $pengajuan->tahun_pengajuan)
+            ->where('jenis_ternak_id', $pengajuan->jenis_ternak_id)
+            ->where('kab_kota_id', $kabKotaId)
+            ->where('jenis_kelamin', $pengajuan->jenis_kelamin)
+            ->where('jenis_kuota', $jenisPenggunaan)
+            ->when($isLombok, function ($query) {
+                return $query->where('pulau', 'Lombok');
+            })
+            ->first();
+
+        if ($kuota) {
+            PenggunaanKuota::create([
+                'pengajuan_id' => $pengajuan->id,
+                'kuota_id' => $kuota->id,
+                'jumlah_digunakan' => $pengajuan->jumlah_ternak,
+                'jenis_penggunaan' => $jenisPenggunaan,
+                'kab_kota_id' => $kabKotaId,
+                'tahun' => $pengajuan->tahun_pengajuan,
+                'jenis_ternak_id' => $pengajuan->jenis_ternak_id,
+                'jenis_kelamin' => $pengajuan->jenis_kelamin,
+                'pulau' => $isLombok ? 'Lombok' : null,
+            ]);
+        }
+    }
+
+    /**
+     * Hapus penggunaan kuota untuk pengajuan (jika dibatalkan)
+     */
+    public static function hapusPenggunaanKuota(Pengajuan $pengajuan)
+    {
+        PenggunaanKuota::where('pengajuan_id', $pengajuan->id)->delete();
     }
 }
