@@ -198,9 +198,11 @@ class PengajuanService
             ->where('jenis_kelamin', $pengajuan->jenis_kelamin)
             ->where('jenis_kuota', $jenisPenggunaan)
             ->when($isLombok, function ($query) {
+                // Untuk Lombok: gabung semua kab/kota (kab_kota_id = null, pulau = 'Lombok')
                 return $query->where('kab_kota_id', null)->where('pulau', 'Lombok');
             }, function ($query) use ($kabKotaId) {
-                return $query->where('kab_kota_id', $kabKotaId)->whereNull('pulau');
+                // Untuk Sumbawa dan lainnya: per kab/kota (kab_kota_id = [id], pulau sesuai)
+                return $query->where('kab_kota_id', $kabKotaId);
             })
             ->first();
 
@@ -214,7 +216,7 @@ class PengajuanService
                 'tahun' => $pengajuan->tahun_pengajuan,
                 'jenis_ternak_id' => $pengajuan->jenis_ternak_id,
                 'jenis_kelamin' => $pengajuan->jenis_kelamin,
-                'pulau' => $isLombok ? 'Lombok' : null,
+                'pulau' => $isLombok ? 'Lombok' : $kuota->pulau,
             ]);
         }
     }
