@@ -232,7 +232,14 @@ class PengajuanService
 
         // Cek apakah kab/kota ada di pulau Lombok
         $kabKota = \App\Models\KabKota::find($kabKotaId);
-        $isLombok = $kabKota && $kabKota->kuotas()->where('pulau', 'Lombok')->exists();
+        $kabKotaLombok = [
+            'Kota Mataram',
+            'Kab. Lombok Barat', 
+            'Kab. Lombok Tengah',
+            'Kab. Lombok Timur',
+            'Kab. Lombok Utara'
+        ];
+        $isLombok = $kabKota && in_array($kabKota->nama, $kabKotaLombok);
 
         // Ambil kuota yang sesuai
         $kuota = Kuota::where('tahun', $pengajuan->tahun_pengajuan)

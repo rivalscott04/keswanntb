@@ -86,8 +86,17 @@ class Pengajuan extends Model
         $kabKotaAsal = $this->kabKotaAsal;
         $kabKotaTujuan = $this->kabKotaTujuan;
         
-        $isLombokAsal = $kabKotaAsal && $kabKotaAsal->kuotas()->where('pulau', 'Lombok')->exists();
-        $isLombokTujuan = $kabKotaTujuan && $kabKotaTujuan->kuotas()->where('pulau', 'Lombok')->exists();
+        // Daftar kab/kota di pulau Lombok
+        $kabKotaLombok = [
+            'Kota Mataram',
+            'Kab. Lombok Barat', 
+            'Kab. Lombok Tengah',
+            'Kab. Lombok Timur',
+            'Kab. Lombok Utara'
+        ];
+        
+        $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
+        $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
 
         if ($isLombokAsal || $isLombokTujuan) {
             // Untuk pulau Lombok, gunakan logika khusus

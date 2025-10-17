@@ -84,14 +84,14 @@ class PenggunaanKuota extends Model
      */
     public static function getKuotaTersisaLombok($tahun, $jenisTernakId, $jenisKelamin, $jenisKuota)
     {
-        // Ambil semua kab/kota di pulau Lombok
-        $kabKotaLombok = KabKota::whereHas('kuotas', function ($query) use ($tahun, $jenisTernakId, $jenisKelamin, $jenisKuota) {
-            $query->where('tahun', $tahun)
-                ->where('jenis_ternak_id', $jenisTernakId)
-                ->where('jenis_kelamin', $jenisKelamin)
-                ->where('jenis_kuota', $jenisKuota)
-                ->where('pulau', 'Lombok');
-        })->pluck('id');
+        // Ambil semua kab/kota di pulau Lombok berdasarkan nama
+        $kabKotaLombok = KabKota::whereIn('nama', [
+            'Kota Mataram',
+            'Kab. Lombok Barat', 
+            'Kab. Lombok Tengah',
+            'Kab. Lombok Timur',
+            'Kab. Lombok Utara'
+        ])->pluck('id');
 
         if ($kabKotaLombok->isEmpty()) {
             return 0;
