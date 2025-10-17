@@ -41,21 +41,39 @@ class PengajuanResource extends Resource
             $kabKotaTujuanId = $get('kab_kota_tujuan_id');
             $jenisKelamin = $get('jenis_kelamin');
 
-            // Cek kuota pemasukan di kota tujuan
-            $kuotaPemasukan = Kuota::where('tahun', $tahun)
-                ->where('jenis_ternak_id', $jenisTernakId)
-                ->where('kab_kota_id', $kabKotaTujuanId)
-                ->where('jenis_kelamin', $jenisKelamin)
-                ->where('jenis_kuota', 'pemasukan')
-                ->value('kuota') ?? 0;
+            // Daftar kab/kota di pulau Lombok
+            $kabKotaLombok = [
+                'Kota Mataram',
+                'Kab. Lombok Barat', 
+                'Kab. Lombok Tengah',
+                'Kab. Lombok Timur',
+                'Kab. Lombok Utara'
+            ];
 
-            // Cek kuota pengeluaran di kota asal
-            $kuotaPengeluaran = Kuota::where('tahun', $tahun)
-                ->where('jenis_ternak_id', $jenisTernakId)
-                ->where('kab_kota_id', $kabKotaAsalId)
-                ->where('jenis_kelamin', $jenisKelamin)
-                ->where('jenis_kuota', 'pengeluaran')
-                ->value('kuota') ?? 0;
+            // Cek apakah kab/kota asal dan tujuan ada di Lombok
+            $kabKotaAsal = \App\Models\KabKota::find($kabKotaAsalId);
+            $kabKotaTujuan = \App\Models\KabKota::find($kabKotaTujuanId);
+            
+            $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
+            $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
+
+            if ($isLombokAsal || $isLombokTujuan) {
+                // Untuk pulau Lombok, gunakan logika global
+                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                    $tahun, $jenisTernakId, $jenisKelamin, 'pemasukan'
+                );
+                $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                    $tahun, $jenisTernakId, $jenisKelamin, 'pengeluaran'
+                );
+            } else {
+                // Logika normal untuk kab/kota lain
+                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
+                    $tahun, $jenisTernakId, $kabKotaTujuanId, $jenisKelamin, 'pemasukan'
+                );
+                $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisa(
+                    $tahun, $jenisTernakId, $kabKotaAsalId, $jenisKelamin, 'pengeluaran'
+                );
+            }
 
             // Ambil nilai terkecil
             $kuotaTersedia = min($kuotaPemasukan, $kuotaPengeluaran);

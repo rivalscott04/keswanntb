@@ -36,12 +36,31 @@ class PengajuanPemasukanResource extends Resource
             $jenisTernakId = $get('jenis_ternak_id');
             $kabKotaTujuanId = $get('kab_kota_tujuan_id');
             $jenisKelamin = $get('jenis_kelamin');
-            return \App\Models\Kuota::where('tahun', $tahun)
-                ->where('jenis_ternak_id', $jenisTernakId)
-                ->where('kab_kota_id', $kabKotaTujuanId)
-                ->where('jenis_kelamin', $jenisKelamin)
-                ->where('jenis_kuota', 'pemasukan')
-                ->value('kuota') ?? 0;
+
+            // Daftar kab/kota di pulau Lombok
+            $kabKotaLombok = [
+                'Kota Mataram',
+                'Kab. Lombok Barat', 
+                'Kab. Lombok Tengah',
+                'Kab. Lombok Timur',
+                'Kab. Lombok Utara'
+            ];
+
+            // Cek apakah kab/kota tujuan ada di Lombok
+            $kabKotaTujuan = \App\Models\KabKota::find($kabKotaTujuanId);
+            $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
+
+            if ($isLombokTujuan) {
+                // Untuk pulau Lombok, gunakan logika global
+                return \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                    $tahun, $jenisTernakId, $jenisKelamin, 'pemasukan'
+                );
+            } else {
+                // Logika normal untuk kab/kota lain
+                return \App\Models\PenggunaanKuota::getKuotaTersisa(
+                    $tahun, $jenisTernakId, $kabKotaTujuanId, $jenisKelamin, 'pemasukan'
+                );
+            }
         };
         return $form
             ->schema([
