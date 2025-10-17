@@ -210,27 +210,37 @@ class Pengajuan extends Model
             return in_array($this->status, ['menunggu', 'diproses']);
         }
 
-        // Untuk pengajuan pengeluaran, dinas kab/kota asal bisa approve
-        if ($this->jenis_pengajuan === 'pengeluaran' && $this->tahapVerifikasi->urutan === 2) {
-            return in_array($this->status, ['menunggu', 'diproses']) &&
-                !$this->is_kuota_penuh &&
-                $user->wewenang->nama === 'Disnak Kab/Kota' &&
-                $user->kab_kota_id === $this->kab_kota_asal_id;
+        if ($this->tahapVerifikasi->urutan === 2) {
+            // Disnak Kab/Kota Asal - bisa approve untuk pengeluaran dan antar kab/kota
+            if (in_array($this->jenis_pengajuan, ['pengeluaran', 'antar_kab_kota'])) {
+                return in_array($this->status, ['menunggu', 'diproses']) &&
+                    !$this->is_kuota_penuh &&
+                    $user->wewenang->nama === 'Disnak Kab/Kota' &&
+                    $user->kab_kota_id === $this->kab_kota_asal_id;
+            }
         }
-
-        // Untuk pengajuan pemasukan, dinas kab/kota tujuan bisa approve
-        if ($this->jenis_pengajuan === 'pemasukan' && $this->tahapVerifikasi->urutan === 3) {
-            return in_array($this->status, ['menunggu', 'diproses']) &&
-                !$this->is_kuota_penuh &&
-                $user->wewenang->nama === 'Disnak Kab/Kota' &&
-                $user->kab_kota_id === $this->kab_kota_tujuan_id;
+        
+        if ($this->tahapVerifikasi->urutan === 3) {
+            // Disnak Kab/Kota Tujuan
+            if ($this->jenis_pengajuan === 'pengeluaran') {
+                // Pengeluaran skip tahap tujuan
+                return false;
+            }
+            if (in_array($this->jenis_pengajuan, ['pemasukan', 'antar_kab_kota'])) {
+                return in_array($this->status, ['menunggu', 'diproses']) &&
+                    !$this->is_kuota_penuh &&
+                    $user->wewenang->nama === 'Disnak Kab/Kota' &&
+                    $user->kab_kota_id === $this->kab_kota_tujuan_id;
+            }
         }
-
-        // Untuk pengajuan pemasukan, disnak provinsi bisa approve
-        if ($this->jenis_pengajuan === 'pemasukan' && $this->tahapVerifikasi->urutan === 4) {
-            return in_array($this->status, ['menunggu', 'diproses']) &&
-                !$this->is_kuota_penuh &&
-                $user->wewenang->nama === 'Disnak Provinsi';
+        
+        if ($this->tahapVerifikasi->urutan === 4) {
+            // Disnak Provinsi
+            if (in_array($this->jenis_pengajuan, ['pemasukan', 'antar_kab_kota'])) {
+                return in_array($this->status, ['menunggu', 'diproses']) &&
+                    !$this->is_kuota_penuh &&
+                    $user->wewenang->nama === 'Disnak Provinsi';
+            }
         }
 
         return false;
