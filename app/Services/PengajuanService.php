@@ -48,11 +48,14 @@ class PengajuanService
 
         // Jika tahap saat ini Disnak Provinsi, lakukan pencatatan penggunaan kuota dan update status ke 'disetujui', lalu lanjut ke DPMPTSP
         if ($record->tahapVerifikasi->nama === 'Disnak Provinsi') {
-            // Catat penggunaan kuota pengeluaran
-            self::catatPenggunaanKuota($record, 'pengeluaran');
-            
-            // Catat penggunaan kuota pemasukan
-            self::catatPenggunaanKuota($record, 'pemasukan');
+            if ($record->jenis_pengajuan === 'antar_kab_kota') {
+                // Untuk pengajuan antar kab/kota, hanya catat penggunaan kuota pengeluaran dari asal
+                self::catatPenggunaanKuota($record, 'pengeluaran');
+            } else {
+                // Untuk pengajuan pemasukan/pengeluaran, catat kedua kuota
+                self::catatPenggunaanKuota($record, 'pengeluaran');
+                self::catatPenggunaanKuota($record, 'pemasukan');
+            }
             
             $record->update([
                 'tahap_verifikasi_id' => $tahapBerikutnya->id,
@@ -75,59 +78,6 @@ class PengajuanService
             ->send();
     }
 
-    public static function approve(Pengajuan $record, $user, array $data)
-    {
-        $tahapBerikutnya = TahapVerifikasi::where('urutan', $record->tahapVerifikasi->urutan + 1)
-            ->orderBy('urutan')
-            ->first();
-
-        // Skip tahap "Disnak Kab/Kota NTB Tujuan" jika pengeluaran
-        if (
-            $record->jenis_pengajuan === 'pengeluaran' &&
-            $tahapBerikutnya &&
-            str_contains(strtolower($tahapBerikutnya->nama), 'tujuan')
-        ) {
-            $tahapBerikutnya = TahapVerifikasi::where('urutan', $tahapBerikutnya->urutan + 1)
-                ->orderBy('urutan')
-                ->first();
-        }
-        // Skip tahap "Disnak Kab/Kota NTB Asal" jika pemasukan
-        if (
-            $record->jenis_pengajuan === 'pemasukan' &&
-            $tahapBerikutnya &&
-            str_contains(strtolower($tahapBerikutnya->nama), 'asal')
-        ) {
-            $tahapBerikutnya = TahapVerifikasi::where('urutan', $tahapBerikutnya->urutan + 1)
-                ->orderBy('urutan')
-                ->first();
-        }
-
-        HistoriPengajuan::create([
-            'pengajuan_id' => $record->id,
-            'tahap_verifikasi_id' => $record->tahap_verifikasi_id,
-            'user_id' => $user->id,
-            'status' => 'disetujui',
-            'catatan' => $data['catatan'] ?? null,
-        ]);
-
-        // Update status pengajuan
-        if ($tahapBerikutnya) {
-            $record->update([
-                'tahap_verifikasi_id' => $tahapBerikutnya->id,
-                'status' => 'diproses',
-            ]);
-        } else {
-            // Jika tidak ada tahap berikutnya, set status ke disetujui
-            $record->update([
-                'status' => 'disetujui',
-            ]);
-        }
-
-        Notification::make()
-            ->title('Pengajuan berhasil disetujui')
-            ->success()
-            ->send();
-    }
 
     public static function tolak(Pengajuan $record, $user, array $data)
     {
@@ -214,10 +164,11 @@ class PengajuanService
                 $query->where('tahap_verifikasi_id', $tahap->id)
                     ->where('status', 'disetujui');
             }
-        } elseif ($user->wewenang->nama === 'biasa' || $user->wewenang->nama === 'Pengusaha') {
+        } else {
             $query->where('user_id', $user->id)
                 ->where('status', 'ditolak');
         }
+
         return $query;
     }
 
@@ -244,11 +195,12 @@ class PengajuanService
         // Ambil kuota yang sesuai
         $kuota = Kuota::where('tahun', $pengajuan->tahun_pengajuan)
             ->where('jenis_ternak_id', $pengajuan->jenis_ternak_id)
-            ->where('kab_kota_id', $kabKotaId)
             ->where('jenis_kelamin', $pengajuan->jenis_kelamin)
             ->where('jenis_kuota', $jenisPenggunaan)
             ->when($isLombok, function ($query) {
-                return $query->where('pulau', 'Lombok');
+                return $query->where('kab_kota_id', null)->where('pulau', 'Lombok');
+            }, function ($query) use ($kabKotaId) {
+                return $query->where('kab_kota_id', $kabKotaId)->whereNull('pulau');
             })
             ->first();
 

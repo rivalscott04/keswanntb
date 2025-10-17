@@ -98,46 +98,87 @@ class Pengajuan extends Model
         $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
         $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
 
-        if ($isLombokAsal || $isLombokTujuan) {
-            // Untuk pulau Lombok, gunakan logika khusus
-            $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
-                $this->tahun_pengajuan,
-                $this->jenis_ternak_id,
-                $this->jenis_kelamin,
-                'pemasukan'
-            );
-
-            $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
-                $this->tahun_pengajuan,
-                $this->jenis_ternak_id,
-                $this->jenis_kelamin,
-                'pengeluaran'
-            );
+        if ($this->jenis_pengajuan === 'antar_kab_kota') {
+            // Untuk pengajuan antar kab/kota, hanya cek kuota pengeluaran dari asal
+            if ($isLombokAsal) {
+                return \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                    $this->tahun_pengajuan,
+                    $this->jenis_ternak_id,
+                    $this->jenis_kelamin,
+                    'pengeluaran'
+                );
+            } else {
+                return \App\Models\PenggunaanKuota::getKuotaTersisa(
+                    $this->tahun_pengajuan,
+                    $this->jenis_ternak_id,
+                    $this->kab_kota_asal_id,
+                    $this->jenis_kelamin,
+                    'pengeluaran'
+                );
+            }
         } else {
-            // Logika normal untuk kab/kota lain
-            $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
-                $this->tahun_pengajuan,
-                $this->jenis_ternak_id,
-                $this->kab_kota_tujuan_id,
-                $this->jenis_kelamin,
-                'pemasukan'
-            );
+            // Untuk pengajuan pemasukan/pengeluaran, gunakan logika lama
+            if ($isLombokAsal || $isLombokTujuan) {
+                // Untuk pulau Lombok, gunakan logika khusus
+                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                    $this->tahun_pengajuan,
+                    $this->jenis_ternak_id,
+                    $this->jenis_kelamin,
+                    'pemasukan'
+                );
 
-            $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisa(
-                $this->tahun_pengajuan,
-                $this->jenis_ternak_id,
-                $this->kab_kota_asal_id,
-                $this->jenis_kelamin,
-                'pengeluaran'
-            );
+                $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                    $this->tahun_pengajuan,
+                    $this->jenis_ternak_id,
+                    $this->jenis_kelamin,
+                    'pengeluaran'
+                );
+            } else {
+                // Logika normal untuk kab/kota lain
+                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
+                    $this->tahun_pengajuan,
+                    $this->jenis_ternak_id,
+                    $this->kab_kota_tujuan_id,
+                    $this->jenis_kelamin,
+                    'pemasukan'
+                );
+
+                $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisa(
+                    $this->tahun_pengajuan,
+                    $this->jenis_ternak_id,
+                    $this->kab_kota_asal_id,
+                    $this->jenis_kelamin,
+                    'pengeluaran'
+                );
+            }
+
+            return min($kuotaPemasukan, $kuotaPengeluaran);
         }
-
-        return min($kuotaPemasukan, $kuotaPengeluaran);
     }
 
     public function getIsKuotaPenuhAttribute()
     {
         return $this->jumlah_ternak > $this->kuota_tersedia;
+    }
+
+    public function getIsLombokAttribute()
+    {
+        // Daftar kab/kota di pulau Lombok
+        $kabKotaLombok = [
+            'Kota Mataram',
+            'Kab. Lombok Barat', 
+            'Kab. Lombok Tengah',
+            'Kab. Lombok Timur',
+            'Kab. Lombok Utara'
+        ];
+        
+        $kabKotaAsal = $this->kabKotaAsal;
+        $kabKotaTujuan = $this->kabKotaTujuan;
+        
+        $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
+        $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
+        
+        return $isLombokAsal || $isLombokTujuan;
     }
 
     public function canVerifyBy($user)
@@ -159,6 +200,12 @@ class Pengajuan extends Model
                 // Pengeluaran skip tahap tujuan
                 return false;
             }
+            if ($this->jenis_pengajuan === 'antar_kab_kota') {
+                // Untuk antar kab/kota, tujuan tidak perlu cek kuota
+                return in_array($this->status, ['menunggu', 'diproses']) &&
+                    $user->wewenang->nama === 'Disnak Kab/Kota' &&
+                    $user->kab_kota_id === $this->kab_kota_tujuan_id;
+            }
             return in_array($this->status, ['menunggu', 'diproses']) &&
                 !$this->is_kuota_penuh &&
                 $user->wewenang->nama === 'Disnak Kab/Kota' &&
@@ -166,6 +213,11 @@ class Pengajuan extends Model
         }
         if ($this->tahapVerifikasi->urutan === 4) {
             // Disnak Provinsi
+            if ($this->jenis_pengajuan === 'antar_kab_kota') {
+                // Untuk antar kab/kota, provinsi tidak perlu cek kuota
+                return in_array($this->status, ['menunggu', 'diproses']) &&
+                    $user->wewenang->nama === 'Disnak Provinsi';
+            }
             return in_array($this->status, ['menunggu', 'diproses']) &&
                 !$this->is_kuota_penuh &&
                 $user->wewenang->nama === 'Disnak Provinsi';
@@ -213,47 +265,6 @@ class Pengajuan extends Model
         return false;
     }
 
-    public function canApproveBy($user)
-    {
-        if ($user->is_admin) {
-            return in_array($this->status, ['menunggu', 'diproses']);
-        }
-
-        if ($this->tahapVerifikasi->urutan === 2) {
-            // Disnak Kab/Kota Asal - bisa approve untuk pengeluaran dan antar kab/kota
-            if (in_array($this->jenis_pengajuan, ['pengeluaran', 'antar_kab_kota'])) {
-                return in_array($this->status, ['menunggu', 'diproses']) &&
-                    !$this->is_kuota_penuh &&
-                    $user->wewenang->nama === 'Disnak Kab/Kota' &&
-                    $user->kab_kota_id === $this->kab_kota_asal_id;
-            }
-        }
-        
-        if ($this->tahapVerifikasi->urutan === 3) {
-            // Disnak Kab/Kota Tujuan
-            if ($this->jenis_pengajuan === 'pengeluaran') {
-                // Pengeluaran skip tahap tujuan
-                return false;
-            }
-            if (in_array($this->jenis_pengajuan, ['pemasukan', 'antar_kab_kota'])) {
-                return in_array($this->status, ['menunggu', 'diproses']) &&
-                    !$this->is_kuota_penuh &&
-                    $user->wewenang->nama === 'Disnak Kab/Kota' &&
-                    $user->kab_kota_id === $this->kab_kota_tujuan_id;
-            }
-        }
-        
-        if ($this->tahapVerifikasi->urutan === 4) {
-            // Disnak Provinsi
-            if (in_array($this->jenis_pengajuan, ['pemasukan', 'antar_kab_kota'])) {
-                return in_array($this->status, ['menunggu', 'diproses']) &&
-                    !$this->is_kuota_penuh &&
-                    $user->wewenang->nama === 'Disnak Provinsi';
-            }
-        }
-
-        return false;
-    }
 
     public function getStatusProsesLabelAttribute()
     {

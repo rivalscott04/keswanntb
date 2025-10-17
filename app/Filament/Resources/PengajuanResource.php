@@ -50,37 +50,31 @@ class PengajuanResource extends Resource
                 'Kab. Lombok Utara'
             ];
 
-            // Cek apakah kab/kota asal dan tujuan ada di Lombok
+            // Cek apakah kab/kota asal ada di Lombok
             $kabKotaAsal = \App\Models\KabKota::find($kabKotaAsalId);
             $kabKotaTujuan = \App\Models\KabKota::find($kabKotaTujuanId);
             
             $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
             $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
 
-            if ($isLombokAsal || $isLombokTujuan) {
-                // Untuk pulau Lombok, gunakan logika global
-                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
-                    $tahun, $jenisTernakId, $jenisKelamin, 'pemasukan'
-                );
+            // Untuk pengajuan antar kab/kota, hanya cek kuota pengeluaran dari asal
+            if ($isLombokAsal) {
+                // Kuota pengeluaran dari pulau Lombok
                 $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
                     $tahun, $jenisTernakId, $jenisKelamin, 'pengeluaran'
                 );
+                $lokasiKuota = 'Pulau Lombok';
             } else {
-                // Logika normal untuk kab/kota lain
-                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
-                    $tahun, $jenisTernakId, $kabKotaTujuanId, $jenisKelamin, 'pemasukan'
-                );
+                // Kuota pengeluaran dari kab/kota asal
                 $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisa(
                     $tahun, $jenisTernakId, $kabKotaAsalId, $jenisKelamin, 'pengeluaran'
                 );
+                $lokasiKuota = $kabKotaAsal ? $kabKotaAsal->nama : 'Tidak Diketahui';
             }
 
-            // Ambil nilai terkecil
-            $kuotaTersedia = min($kuotaPemasukan, $kuotaPengeluaran);
-
             return [
-                'kuota' => $kuotaTersedia,
-                'pemasukan' => $kuotaPemasukan,
+                'kuota' => $kuotaPengeluaran,
+                'lokasi' => $lokasiKuota,
                 'pengeluaran' => $kuotaPengeluaran
             ];
         };
@@ -211,7 +205,7 @@ class PengajuanResource extends Resource
                                 fn(callable $get) => $cekKuotaTersedia($get)['kuota']
                             )
                             ->helperText(
-                                fn(callable $get) => 'Kuota tersedia: ' . $cekKuotaTersedia($get)['kuota'] . ' (Pemasukan: ' . $cekKuotaTersedia($get)['pemasukan'] . ', Pengeluaran: ' . $cekKuotaTersedia($get)['pengeluaran'] . ')'
+                                fn(callable $get) => 'Kuota tersedia: ' . $cekKuotaTersedia($get)['kuota'] . ' (Pengeluaran - ' . $cekKuotaTersedia($get)['lokasi'] . ')'
                             )
                             ->required()
                             ->reactive()

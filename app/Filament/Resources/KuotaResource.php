@@ -50,18 +50,20 @@ class KuotaResource extends Resource
                         'betina' => 'Betina',
                     ])
                     ->required(),
-                Forms\Components\Select::make('kab_kota_id')
-                    ->label('Kab/Kota')
-                    ->relationship('kabKota', 'nama')
-                    ->required()
-                    ->live(),
                 Forms\Components\Select::make('pulau')
                     ->label('Pulau')
                     ->options([
                         'Lombok' => 'Lombok',
                         'Sumbawa' => 'Sumbawa',
                     ])
-                    ->helperText('Opsional: Pilih pulau untuk kategorisasi tambahan')
+                    ->required()
+                    ->live()
+                    ->helperText('Pilih "Lombok" untuk kuota terintegrasi semua kab/kota di Lombok'),
+                Forms\Components\Select::make('kab_kota_id')
+                    ->label('Kab/Kota')
+                    ->relationship('kabKota', 'nama')
+                    ->visible(fn(callable $get) => $get('pulau') !== 'Lombok')
+                    ->required(fn(callable $get) => $get('pulau') !== 'Lombok')
                     ->live(),
                 Forms\Components\Select::make('jenis_kuota')
                     ->label('Jenis')
@@ -95,13 +97,11 @@ class KuotaResource extends Resource
                 Tables\Columns\TextColumn::make('jenis_kelamin')
                     ->label('Jenis Kelamin')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('pulau')
-                    ->label('Pulau')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('kabKota.nama')
-                    ->label('Kab/Kota')
+                Tables\Columns\TextColumn::make('lokasi_display')
+                    ->label('Lokasi')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->formatStateUsing(fn($record) => $record->lokasi_display),
                 Tables\Columns\TextColumn::make('jenis_kuota')
                     ->label('Jenis')
                     ->sortable(),
@@ -109,9 +109,19 @@ class KuotaResource extends Resource
                     ->label('Tahun')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('kuota')
-                    ->label('Jumlah Kuota')
+                    ->label('Total Kuota')
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('kuota_terpakai')
+                    ->label('Kuota Terpakai')
+                    ->numeric()
+                    ->sortable()
+                    ->color('warning'),
+                Tables\Columns\TextColumn::make('kuota_sisa')
+                    ->label('Kuota Sisa')
+                    ->numeric()
+                    ->sortable()
+                    ->color(fn($record) => $record->kuota_sisa > 0 ? 'success' : 'danger'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
