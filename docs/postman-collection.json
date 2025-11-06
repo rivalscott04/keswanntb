@@ -1,0 +1,320 @@
+{
+  "info": {
+    "name": "API Sistem Kuota Ternak NTB",
+    "description": "API untuk mengakses data kuota pemasukan dan pengeluaran ternak per jenis dan wilayah, serta master data seperti jenis ternak, kabupaten/kota, provinsi, dan kategori ternak.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Master Data",
+      "item": [
+        {
+          "name": "Get All Jenis Ternak",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/master/jenis-ternak",
+              "host": ["{{base_url}}"],
+              "path": ["master", "jenis-ternak"],
+              "query": [
+                {
+                  "key": "kategori_ternak_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "bidang_id",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Jenis Ternak by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/master/jenis-ternak/1",
+              "host": ["{{base_url}}"],
+              "path": ["master", "jenis-ternak", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get All Kabupaten/Kota",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/master/kab-kota",
+              "host": ["{{base_url}}"],
+              "path": ["master", "kab-kota"],
+              "query": [
+                {
+                  "key": "provinsi_id",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Kabupaten/Kota by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/master/kab-kota/1",
+              "host": ["{{base_url}}"],
+              "path": ["master", "kab-kota", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get All Provinsi",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/master/provinsi",
+              "host": ["{{base_url}}"],
+              "path": ["master", "provinsi"]
+            }
+          }
+        },
+        {
+          "name": "Get Provinsi by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/master/provinsi/1",
+              "host": ["{{base_url}}"],
+              "path": ["master", "provinsi", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get All Kategori Ternak",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/master/kategori-ternak",
+              "host": ["{{base_url}}"],
+              "path": ["master", "kategori-ternak"]
+            }
+          }
+        },
+        {
+          "name": "Get Kategori Ternak by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/master/kategori-ternak/1",
+              "host": ["{{base_url}}"],
+              "path": ["master", "kategori-ternak", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kuota",
+      "item": [
+        {
+          "name": "Get All Kuota",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/kuota?tahun=2025",
+              "host": ["{{base_url}}"],
+              "path": ["kuota"],
+              "query": [
+                {
+                  "key": "tahun",
+                  "value": "2025",
+                  "disabled": false
+                },
+                {
+                  "key": "jenis_kuota",
+                  "value": "pemasukan",
+                  "disabled": true
+                },
+                {
+                  "key": "jenis_ternak_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "kab_kota_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "pulau",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "jenis_kelamin",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Kuota Pemasukan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/kuota/pemasukan?tahun=2025",
+              "host": ["{{base_url}}"],
+              "path": ["kuota", "pemasukan"],
+              "query": [
+                {
+                  "key": "tahun",
+                  "value": "2025",
+                  "disabled": false
+                },
+                {
+                  "key": "jenis_ternak_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "kab_kota_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "pulau",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "jenis_kelamin",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Kuota Pengeluaran",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/kuota/pengeluaran?tahun=2025",
+              "host": ["{{base_url}}"],
+              "path": ["kuota", "pengeluaran"],
+              "query": [
+                {
+                  "key": "tahun",
+                  "value": "2025",
+                  "disabled": false
+                },
+                {
+                  "key": "jenis_ternak_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "kab_kota_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "pulau",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "jenis_kelamin",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost/api",
+      "type": "string"
+    }
+  ]
+}
+

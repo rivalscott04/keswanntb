@@ -1,0 +1,701 @@
+openapi: 3.0.3
+info:
+  title: API Sistem Kuota Ternak NTB
+  description: |
+    API untuk mengakses data kuota pemasukan dan pengeluaran ternak per jenis dan wilayah,
+    serta master data seperti jenis ternak, kabupaten/kota, provinsi, dan kategori ternak.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost/api
+    description: Development server
+  - url: https://api.example.com/api
+    description: Production server (ubah sesuai URL production Anda)
+
+tags:
+  - name: Kuota
+    description: Endpoint untuk data kuota ternak
+  - name: Master Data
+    description: Endpoint untuk data master (jenis ternak, wilayah, dll)
+
+paths:
+  /kuota:
+    get:
+      tags:
+        - Kuota
+      summary: Get all kuota
+      description: Mendapatkan semua data kuota dengan filter opsional
+      operationId: getKuota
+      parameters:
+        - name: tahun
+          in: query
+          description: Filter berdasarkan tahun (default: tahun saat ini)
+          required: false
+          schema:
+            type: integer
+            example: 2025
+        - name: jenis_kuota
+          in: query
+          description: Filter berdasarkan jenis kuota
+          required: false
+          schema:
+            type: string
+            enum: [pemasukan, pengeluaran]
+        - name: jenis_ternak_id
+          in: query
+          description: Filter berdasarkan ID jenis ternak
+          required: false
+          schema:
+            type: integer
+        - name: kab_kota_id
+          in: query
+          description: Filter berdasarkan ID kabupaten/kota
+          required: false
+          schema:
+            type: integer
+        - name: pulau
+          in: query
+          description: Filter berdasarkan pulau
+          required: false
+          schema:
+            type: string
+            example: Lombok
+        - name: jenis_kelamin
+          in: query
+          description: Filter berdasarkan jenis kelamin
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KuotaResponse'
+                  meta:
+                    $ref: '#/components/schemas/MetaKuota'
+
+  /kuota/pemasukan:
+    get:
+      tags:
+        - Kuota
+      summary: Get kuota pemasukan
+      description: Mendapatkan kuota pemasukan, dikelompokkan berdasarkan jenis ternak dan wilayah
+      operationId: getKuotaPemasukan
+      parameters:
+        - name: tahun
+          in: query
+          description: Filter berdasarkan tahun (default: tahun saat ini)
+          required: false
+          schema:
+            type: integer
+            example: 2025
+        - name: jenis_ternak_id
+          in: query
+          description: Filter berdasarkan ID jenis ternak
+          required: false
+          schema:
+            type: integer
+        - name: kab_kota_id
+          in: query
+          description: Filter berdasarkan ID kabupaten/kota
+          required: false
+          schema:
+            type: integer
+        - name: pulau
+          in: query
+          description: Filter berdasarkan pulau
+          required: false
+          schema:
+            type: string
+        - name: jenis_kelamin
+          in: query
+          description: Filter berdasarkan jenis kelamin
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KuotaGroupedResponse'
+                  meta:
+                    $ref: '#/components/schemas/MetaKuotaJenis'
+
+  /kuota/pengeluaran:
+    get:
+      tags:
+        - Kuota
+      summary: Get kuota pengeluaran
+      description: Mendapatkan kuota pengeluaran, dikelompokkan berdasarkan jenis ternak dan wilayah
+      operationId: getKuotaPengeluaran
+      parameters:
+        - name: tahun
+          in: query
+          description: Filter berdasarkan tahun (default: tahun saat ini)
+          required: false
+          schema:
+            type: integer
+            example: 2025
+        - name: jenis_ternak_id
+          in: query
+          description: Filter berdasarkan ID jenis ternak
+          required: false
+          schema:
+            type: integer
+        - name: kab_kota_id
+          in: query
+          description: Filter berdasarkan ID kabupaten/kota
+          required: false
+          schema:
+            type: integer
+        - name: pulau
+          in: query
+          description: Filter berdasarkan pulau
+          required: false
+          schema:
+            type: string
+        - name: jenis_kelamin
+          in: query
+          description: Filter berdasarkan jenis kelamin
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KuotaGroupedResponse'
+                  meta:
+                    $ref: '#/components/schemas/MetaKuotaJenis'
+
+  /master/jenis-ternak:
+    get:
+      tags:
+        - Master Data
+      summary: Get all jenis ternak
+      description: Mendapatkan semua jenis ternak
+      operationId: getJenisTernak
+      parameters:
+        - name: kategori_ternak_id
+          in: query
+          description: Filter berdasarkan kategori ternak ID
+          required: false
+          schema:
+            type: integer
+        - name: bidang_id
+          in: query
+          description: Filter berdasarkan bidang ID
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JenisTernakResponse'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+
+  /master/jenis-ternak/{id}:
+    get:
+      tags:
+        - Master Data
+      summary: Get jenis ternak by ID
+      description: Mendapatkan detail jenis ternak berdasarkan ID
+      operationId: getJenisTernakById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID jenis ternak
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/JenisTernakResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /master/kab-kota:
+    get:
+      tags:
+        - Master Data
+      summary: Get all kabupaten/kota
+      description: Mendapatkan semua kabupaten/kota
+      operationId: getKabKota
+      parameters:
+        - name: provinsi_id
+          in: query
+          description: Filter berdasarkan provinsi ID
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KabKotaResponse'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+
+  /master/kab-kota/{id}:
+    get:
+      tags:
+        - Master Data
+      summary: Get kabupaten/kota by ID
+      description: Mendapatkan detail kabupaten/kota berdasarkan ID
+      operationId: getKabKotaById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID kabupaten/kota
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/KabKotaResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /master/provinsi:
+    get:
+      tags:
+        - Master Data
+      summary: Get all provinsi
+      description: Mendapatkan semua provinsi
+      operationId: getProvinsi
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProvinsiResponse'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+
+  /master/provinsi/{id}:
+    get:
+      tags:
+        - Master Data
+      summary: Get provinsi by ID
+      description: Mendapatkan detail provinsi dengan list kabupaten/kota
+      operationId: getProvinsiById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID provinsi
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ProvinsiDetailResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /master/kategori-ternak:
+    get:
+      tags:
+        - Master Data
+      summary: Get all kategori ternak
+      description: Mendapatkan semua kategori ternak
+      operationId: getKategoriTernak
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KategoriTernakResponse'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+
+  /master/kategori-ternak/{id}:
+    get:
+      tags:
+        - Master Data
+      summary: Get kategori ternak by ID
+      description: Mendapatkan detail kategori ternak dengan list jenis ternak
+      operationId: getKategoriTernakById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID kategori ternak
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/KategoriTernakDetailResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    KuotaResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        jenis_ternak:
+          $ref: '#/components/schemas/JenisTernakBasic'
+        wilayah:
+          $ref: '#/components/schemas/Wilayah'
+        tahun:
+          type: integer
+          example: 2025
+        jenis_kuota:
+          type: string
+          enum: [pemasukan, pengeluaran]
+          example: pemasukan
+        jenis_kelamin:
+          type: string
+          example: Jantan
+        kuota_total:
+          type: integer
+          example: 1000
+        kuota_terpakai:
+          type: integer
+          example: 250
+        kuota_tersisa:
+          type: integer
+          example: 750
+
+    KuotaGroupedResponse:
+      type: object
+      properties:
+        jenis_ternak:
+          $ref: '#/components/schemas/JenisTernakBasic'
+        wilayah:
+          $ref: '#/components/schemas/Wilayah'
+        tahun:
+          type: integer
+          example: 2025
+        jenis_kelamin:
+          type: string
+          example: Jantan
+        kuota_total:
+          type: integer
+          example: 1000
+        kuota_terpakai:
+          type: integer
+          example: 250
+        kuota_tersisa:
+          type: integer
+          example: 750
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              kuota_total:
+                type: integer
+              kuota_terpakai:
+                type: integer
+              kuota_tersisa:
+                type: integer
+
+    JenisTernakBasic:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nama:
+          type: string
+          example: Sapi
+
+    JenisTernakResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nama:
+          type: string
+          example: Sapi
+        kategori_ternak:
+          $ref: '#/components/schemas/KategoriTernakBasic'
+        bidang:
+          $ref: '#/components/schemas/BidangBasic'
+
+    KategoriTernakBasic:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nama:
+          type: string
+          example: Ternak Besar
+
+    KategoriTernakResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nama:
+          type: string
+          example: Ternak Besar
+
+    KategoriTernakDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nama:
+          type: string
+          example: Ternak Besar
+        jenis_ternak:
+          type: array
+          items:
+            $ref: '#/components/schemas/JenisTernakBasic'
+
+    BidangBasic:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nama:
+          type: string
+          example: Bidang Peternakan
+
+    Wilayah:
+      type: object
+      properties:
+        kab_kota_id:
+          type: integer
+          nullable: true
+          example: 5
+        kab_kota_nama:
+          type: string
+          nullable: true
+          example: Mataram
+        pulau:
+          type: string
+          nullable: true
+          example: Lombok
+        lokasi_display:
+          type: string
+          example: Mataram
+
+    KabKotaResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nama:
+          type: string
+          example: Mataram
+        provinsi:
+          $ref: '#/components/schemas/ProvinsiBasic'
+
+    ProvinsiBasic:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nama:
+          type: string
+          example: Nusa Tenggara Barat
+
+    ProvinsiResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nama:
+          type: string
+          example: Nusa Tenggara Barat
+
+    ProvinsiDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nama:
+          type: string
+          example: Nusa Tenggara Barat
+        kab_kota:
+          type: array
+          items:
+            $ref: '#/components/schemas/JenisTernakBasic'
+
+    Meta:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 10
+
+    MetaKuota:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 10
+        tahun:
+          type: integer
+          example: 2025
+
+    MetaKuotaJenis:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 10
+        tahun:
+          type: integer
+          example: 2025
+        jenis_kuota:
+          type: string
+          enum: [pemasukan, pengeluaran]
+          example: pemasukan
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Data tidak ditemukan
+

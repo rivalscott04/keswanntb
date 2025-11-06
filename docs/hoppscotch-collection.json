@@ -1,0 +1,469 @@
+[
+{
+    "v": 10,
+    "name": "API Sistem Kuota Ternak NTB",
+  "folders": [
+    {
+        "v": 10,
+        "name": "Master Data",
+        "folders": [],
+        "requests": [
+          {
+            "v": "16",
+            "auth": {
+              "authType": "none",
+              "authActive": true
+            },
+            "body": {
+              "body": null,
+              "contentType": null
+            },
+            "name": "Get All Jenis Ternak",
+            "method": "GET",
+            "params": [
+              {
+                "key": "kategori_ternak_id",
+                "value": "",
+                "active": false,
+                "description": ""
+              },
+              {
+                "key": "bidang_id",
+                "value": "",
+                "active": false,
+                "description": ""
+              }
+            ],
+            "_ref_id": "req_jenis_ternak_all",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "active": true,
+                "description": ""
+              }
+            ],
+            "endpoint": "<<base_url>>/master/jenis-ternak",
+            "responses": {},
+            "testScript": "",
+            "preRequestScript": "",
+            "requestVariables": []
+          },
+          {
+            "v": "16",
+            "auth": {
+              "authType": "none",
+              "authActive": true
+            },
+            "body": {
+              "body": null,
+              "contentType": null
+            },
+            "name": "Get Jenis Ternak by ID",
+            "method": "GET",
+            "params": [],
+            "_ref_id": "req_jenis_ternak_by_id",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "active": true,
+                "description": ""
+              }
+            ],
+            "endpoint": "<<base_url>>/master/jenis-ternak/1",
+            "responses": {},
+            "testScript": "",
+            "preRequestScript": "",
+            "requestVariables": []
+          },
+          {
+            "v": "16",
+            "auth": {
+              "authType": "none",
+              "authActive": true
+            },
+            "body": {
+              "body": null,
+              "contentType": null
+            },
+            "name": "Get All Kabupaten/Kota",
+            "method": "GET",
+            "params": [
+              {
+                "key": "provinsi_id",
+                "value": "",
+                "active": false,
+                "description": ""
+              }
+            ],
+            "_ref_id": "req_kab_kota_all",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "active": true,
+                "description": ""
+              }
+            ],
+            "endpoint": "<<base_url>>/master/kab-kota",
+            "responses": {},
+            "testScript": "",
+            "preRequestScript": "",
+            "requestVariables": []
+          },
+          {
+            "v": "16",
+            "auth": {
+              "authType": "none",
+              "authActive": true
+            },
+            "body": {
+              "body": null,
+              "contentType": null
+            },
+            "name": "Get Kabupaten/Kota by ID",
+            "method": "GET",
+            "params": [],
+            "_ref_id": "req_kab_kota_by_id",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "active": true,
+                "description": ""
+              }
+            ],
+            "endpoint": "<<base_url>>/master/kab-kota/1",
+            "responses": {},
+            "testScript": "",
+            "preRequestScript": "",
+            "requestVariables": []
+          },
+          {
+            "v": "16",
+            "auth": {
+              "authType": "none",
+              "authActive": true
+            },
+            "body": {
+              "body": null,
+              "contentType": null
+            },
+            "name": "Get All Provinsi",
+            "method": "GET",
+            "params": [],
+            "_ref_id": "req_provinsi_all",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "active": true,
+                "description": ""
+              }
+            ],
+            "endpoint": "<<base_url>>/master/provinsi",
+            "responses": {},
+            "testScript": "",
+            "preRequestScript": "",
+            "requestVariables": []
+          },
+          {
+            "v": "16",
+            "auth": {
+              "authType": "none",
+              "authActive": true
+            },
+            "body": {
+              "body": null,
+              "contentType": null
+            },
+            "name": "Get Provinsi by ID",
+            "method": "GET",
+            "params": [],
+            "_ref_id": "req_provinsi_by_id",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "active": true,
+                "description": ""
+              }
+            ],
+            "endpoint": "<<base_url>>/master/provinsi/1",
+            "responses": {},
+            "testScript": "",
+            "preRequestScript": "",
+            "requestVariables": []
+          },
+          {
+            "v": "16",
+            "auth": {
+              "authType": "none",
+              "authActive": true
+            },
+            "body": {
+              "body": null,
+              "contentType": null
+            },
+            "name": "Get All Kategori Ternak",
+            "method": "GET",
+            "params": [],
+            "_ref_id": "req_kategori_ternak_all",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "active": true,
+                "description": ""
+              }
+            ],
+            "endpoint": "<<base_url>>/master/kategori-ternak",
+            "responses": {},
+            "testScript": "",
+            "preRequestScript": "",
+            "requestVariables": []
+          },
+          {
+            "v": "16",
+            "auth": {
+              "authType": "none",
+              "authActive": true
+            },
+            "body": {
+              "body": null,
+              "contentType": null
+            },
+            "name": "Get Kategori Ternak by ID",
+            "method": "GET",
+            "params": [],
+            "_ref_id": "req_kategori_ternak_by_id",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "active": true,
+                "description": ""
+              }
+            ],
+            "endpoint": "<<base_url>>/master/kategori-ternak/1",
+            "responses": {},
+            "testScript": "",
+            "preRequestScript": "",
+            "requestVariables": []
+          }
+        ],
+        "auth": {
+          "authType": "inherit",
+          "authActive": true
+        },
+        "headers": [],
+        "variables": [],
+        "_ref_id": "coll_master_data"
+      },
+      {
+        "v": 10,
+        "name": "Kuota",
+        "folders": [],
+  "requests": [
+    {
+            "v": "16",
+            "auth": {
+              "authType": "none",
+              "authActive": true
+            },
+            "body": {
+              "body": null,
+              "contentType": null
+            },
+      "name": "Get All Kuota",
+      "method": "GET",
+      "params": [
+        {
+          "key": "tahun",
+          "value": "2025",
+                "active": true,
+                "description": "Filter berdasarkan tahun (default: tahun saat ini)"
+        },
+        {
+          "key": "jenis_kuota",
+          "value": "pemasukan",
+                "active": false,
+                "description": "Filter: pemasukan atau pengeluaran"
+        },
+        {
+          "key": "jenis_ternak_id",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan ID jenis ternak"
+        },
+        {
+          "key": "kab_kota_id",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan ID kabupaten/kota"
+        },
+        {
+          "key": "pulau",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan pulau"
+        },
+        {
+          "key": "jenis_kelamin",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan jenis kelamin"
+        }
+      ],
+            "_ref_id": "req_kuota_all",
+      "headers": [
+        {
+          "key": "Accept",
+                "value": "application/json",
+                "active": true,
+                "description": ""
+              }
+            ],
+            "endpoint": "<<base_url>>/kuota",
+            "responses": {},
+            "testScript": "",
+            "preRequestScript": "",
+            "requestVariables": []
+          },
+          {
+            "v": "16",
+            "auth": {
+              "authType": "none",
+              "authActive": true
+            },
+            "body": {
+              "body": null,
+              "contentType": null
+            },
+      "name": "Get Kuota Pemasukan",
+      "method": "GET",
+      "params": [
+        {
+          "key": "tahun",
+          "value": "2025",
+                "active": true,
+                "description": "Filter berdasarkan tahun (default: tahun saat ini)"
+        },
+        {
+          "key": "jenis_ternak_id",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan ID jenis ternak"
+        },
+        {
+          "key": "kab_kota_id",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan ID kabupaten/kota"
+        },
+        {
+          "key": "pulau",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan pulau"
+        },
+        {
+          "key": "jenis_kelamin",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan jenis kelamin"
+        }
+      ],
+            "_ref_id": "req_kuota_pemasukan",
+      "headers": [
+        {
+          "key": "Accept",
+                "value": "application/json",
+                "active": true,
+                "description": ""
+              }
+            ],
+            "endpoint": "<<base_url>>/kuota/pemasukan",
+            "responses": {},
+            "testScript": "",
+            "preRequestScript": "",
+            "requestVariables": []
+          },
+          {
+            "v": "16",
+            "auth": {
+              "authType": "none",
+              "authActive": true
+            },
+            "body": {
+              "body": null,
+              "contentType": null
+            },
+      "name": "Get Kuota Pengeluaran",
+      "method": "GET",
+      "params": [
+        {
+          "key": "tahun",
+          "value": "2025",
+                "active": true,
+                "description": "Filter berdasarkan tahun (default: tahun saat ini)"
+        },
+        {
+          "key": "jenis_ternak_id",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan ID jenis ternak"
+        },
+        {
+          "key": "kab_kota_id",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan ID kabupaten/kota"
+        },
+        {
+          "key": "pulau",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan pulau"
+        },
+        {
+          "key": "jenis_kelamin",
+          "value": "",
+                "active": false,
+                "description": "Filter berdasarkan jenis kelamin"
+        }
+      ],
+            "_ref_id": "req_kuota_pengeluaran",
+      "headers": [
+        {
+          "key": "Accept",
+                "value": "application/json",
+                "active": true,
+                "description": ""
+              }
+            ],
+            "endpoint": "<<base_url>>/kuota/pengeluaran",
+            "responses": {},
+            "testScript": "",
+            "preRequestScript": "",
+            "requestVariables": []
+          }
+        ],
+        "auth": {
+          "authType": "inherit",
+          "authActive": true
+        },
+        "headers": [],
+        "variables": [],
+        "_ref_id": "coll_kuota"
+      }
+    ],
+    "auth": {
+      "authType": "none",
+      "authActive": true
+    },
+    "headers": [],
+    "variables": []
+  }
+]
