@@ -197,12 +197,17 @@ class PengajuanService
             ->where('jenis_ternak_id', $pengajuan->jenis_ternak_id)
             ->where('jenis_kelamin', $pengajuan->jenis_kelamin)
             ->where('jenis_kuota', $jenisPenggunaan)
-            ->when($isLombok, function ($query) {
-                // Untuk Lombok: gabung semua kab/kota (kab_kota_id = null, pulau = 'Lombok')
+            ->when($isLombok && $jenisPenggunaan === 'pengeluaran', function ($query) {
+                // Untuk pengeluaran dari Lombok: global (kab_kota_id = null, pulau = 'Lombok')
                 return $query->where('kab_kota_id', null)->where('pulau', 'Lombok');
-            }, function ($query) use ($kabKotaId) {
+            }, function ($query) use ($kabKotaId, $isLombok) {
+                // Untuk pemasukan ke Lombok: per kab/kota (kab_kota_id = [id], pulau = 'Lombok')
                 // Untuk Sumbawa dan lainnya: per kab/kota (kab_kota_id = [id], pulau sesuai)
-                return $query->where('kab_kota_id', $kabKotaId);
+                $query->where('kab_kota_id', $kabKotaId);
+                if ($isLombok && $jenisPenggunaan === 'pemasukan') {
+                    $query->where('pulau', 'Lombok');
+                }
+                return $query;
             })
             ->first();
 

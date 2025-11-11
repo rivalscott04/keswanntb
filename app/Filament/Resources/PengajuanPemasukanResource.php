@@ -37,6 +37,10 @@ class PengajuanPemasukanResource extends Resource
             $kabKotaTujuanId = $get('kab_kota_tujuan_id');
             $jenisKelamin = $get('jenis_kelamin');
 
+            if (!$kabKotaTujuanId) {
+                return 0;
+            }
+
             // Daftar kab/kota di pulau Lombok
             $kabKotaLombok = [
                 'Kota Mataram',
@@ -50,17 +54,17 @@ class PengajuanPemasukanResource extends Resource
             $kabKotaTujuan = \App\Models\KabKota::find($kabKotaTujuanId);
             $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
 
-            if ($isLombokTujuan) {
-                // Untuk pulau Lombok, gunakan logika global
-                return \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
-                    $tahun, $jenisTernakId, $jenisKelamin, 'pemasukan'
-                );
-            } else {
-                // Logika normal untuk kab/kota lain
-                return \App\Models\PenggunaanKuota::getKuotaTersisa(
-                    $tahun, $jenisTernakId, $kabKotaTujuanId, $jenisKelamin, 'pemasukan'
-                );
-            }
+            // Untuk pemasukan, selalu gunakan kuota per kab/kota
+            // Kuota pemasukan untuk Lombok adalah per kab/kota (spesifik), bukan global
+            // Kuota pemasukan untuk Sumbawa juga per kab/kota
+            return \App\Models\PenggunaanKuota::getKuotaTersisa(
+                $tahun, 
+                $jenisTernakId, 
+                $kabKotaTujuanId, 
+                $jenisKelamin, 
+                'pemasukan', 
+                $isLombokTujuan ? 'Lombok' : null
+            );
         };
         return $form
             ->schema([

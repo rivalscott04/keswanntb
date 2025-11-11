@@ -117,24 +117,21 @@ class Pengajuan extends Model
                 );
             }
         } else {
-            // Untuk pengajuan pemasukan/pengeluaran, gunakan logika lama
-            if ($isLombokAsal || $isLombokTujuan) {
-                // Untuk pulau Lombok, gunakan logika khusus
-                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+            // Untuk pengajuan pemasukan/pengeluaran
+            // Kuota pemasukan ke Lombok: per kab/kota (spesifik)
+            // Kuota pengeluaran dari Lombok: global
+            if ($isLombokTujuan) {
+                // Pemasukan ke Lombok: per kab/kota
+                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
                     $this->tahun_pengajuan,
                     $this->jenis_ternak_id,
+                    $this->kab_kota_tujuan_id,
                     $this->jenis_kelamin,
-                    'pemasukan'
-                );
-
-                $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
-                    $this->tahun_pengajuan,
-                    $this->jenis_ternak_id,
-                    $this->jenis_kelamin,
-                    'pengeluaran'
+                    'pemasukan',
+                    'Lombok'
                 );
             } else {
-                // Logika normal untuk kab/kota lain
+                // Pemasukan ke kab/kota lain: per kab/kota
                 $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
                     $this->tahun_pengajuan,
                     $this->jenis_ternak_id,
@@ -142,7 +139,18 @@ class Pengajuan extends Model
                     $this->jenis_kelamin,
                     'pemasukan'
                 );
+            }
 
+            if ($isLombokAsal) {
+                // Pengeluaran dari Lombok: global
+                $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                    $this->tahun_pengajuan,
+                    $this->jenis_ternak_id,
+                    $this->jenis_kelamin,
+                    'pengeluaran'
+                );
+            } else {
+                // Pengeluaran dari kab/kota lain: per kab/kota
                 $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisa(
                     $this->tahun_pengajuan,
                     $this->jenis_ternak_id,

@@ -53,8 +53,9 @@ class Kuota extends Model
      */
     public function getKuotaTerpakaiAttribute(): int
     {
-        if ($this->pulau === 'Lombok') {
-            // Untuk pulau Lombok, gunakan method getKuotaTersisaLombok
+        // Jika pulau Lombok dan kab_kota_id null: global (untuk pengeluaran)
+        if ($this->pulau === 'Lombok' && $this->kab_kota_id === null) {
+            // Untuk pulau Lombok global, gunakan method getKuotaTersisaLombok
             $kuotaTersisa = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
                 $this->tahun,
                 $this->jenis_ternak_id,
@@ -63,13 +64,14 @@ class Kuota extends Model
             );
             return max(0, $this->kuota - $kuotaTersisa);
         } else {
-            // Untuk kab/kota spesifik, gunakan method getKuotaTersisa
+            // Untuk kab/kota spesifik (termasuk pemasukan ke Lombok per kab/kota), gunakan method getKuotaTersisa
             $kuotaTersisa = \App\Models\PenggunaanKuota::getKuotaTersisa(
                 $this->tahun,
                 $this->jenis_ternak_id,
                 $this->kab_kota_id,
                 $this->jenis_kelamin,
-                $this->jenis_kuota
+                $this->jenis_kuota,
+                $this->pulau
             );
             return max(0, $this->kuota - $kuotaTersisa);
         }

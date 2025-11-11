@@ -59,19 +59,72 @@ class KuotaResource extends Resource
                     ->required()
                     ->live()
                     ->helperText('Pilih "Lombok" untuk kuota terintegrasi semua kab/kota di Lombok'),
-                Forms\Components\Select::make('kab_kota_id')
-                    ->label('Kab/Kota')
-                    ->relationship('kabKota', 'nama')
-                    ->visible(fn(callable $get) => $get('pulau') !== 'Lombok')
-                    ->required(fn(callable $get) => $get('pulau') !== 'Lombok')
-                    ->live(),
                 Forms\Components\Select::make('jenis_kuota')
                     ->label('Jenis')
                     ->options([
                         'pemasukan' => 'Pemasukan',
                         'pengeluaran' => 'Pengeluaran',
                     ])
-                    ->required(),
+                    ->required()
+                    ->live(),
+                Forms\Components\Select::make('kab_kota_id')
+                    ->label('Kab/Kota')
+                    ->options(function (callable $get) {
+                        $pulau = $get('pulau');
+                        $jenisKuota = $get('jenis_kuota');
+                        
+                        // Jika pulau Lombok dan jenis kuota pemasukan, tampilkan hanya kab/kota Lombok
+                        if ($pulau === 'Lombok' && $jenisKuota === 'pemasukan') {
+                            $kabKotaLombok = [
+                                'Kota Mataram',
+                                'Kab. Lombok Barat',
+                                'Kab. Lombok Tengah',
+                                'Kab. Lombok Timur',
+                                'Kab. Lombok Utara'
+                            ];
+                            return \App\Models\KabKota::whereIn('nama', $kabKotaLombok)
+                                ->pluck('nama', 'id');
+                        }
+                        
+                        // Jika pulau Lombok dan jenis kuota pengeluaran, tidak perlu pilih kab/kota (global)
+                        if ($pulau === 'Lombok' && $jenisKuota === 'pengeluaran') {
+                            return [];
+                        }
+                        
+                        // Untuk pulau lain, tampilkan semua kab/kota
+                        return \App\Models\KabKota::pluck('nama', 'id');
+                    })
+                    ->visible(function (callable $get) {
+                        $pulau = $get('pulau');
+                        $jenisKuota = $get('jenis_kuota');
+                        
+                        // Tampilkan jika:
+                        // 1. Bukan pulau Lombok, ATAU
+                        // 2. Pulau Lombok dan jenis kuota pemasukan (per kab/kota)
+                        return $pulau !== 'Lombok' || ($pulau === 'Lombok' && $jenisKuota === 'pemasukan');
+                    })
+                    ->required(function (callable $get) {
+                        $pulau = $get('pulau');
+                        $jenisKuota = $get('jenis_kuota');
+                        
+                        // Required jika:
+                        // 1. Bukan pulau Lombok, ATAU
+                        // 2. Pulau Lombok dan jenis kuota pemasukan
+                        return $pulau !== 'Lombok' || ($pulau === 'Lombok' && $jenisKuota === 'pemasukan');
+                    })
+                    ->live()
+                    ->helperText(function (callable $get) {
+                        $pulau = $get('pulau');
+                        $jenisKuota = $get('jenis_kuota');
+                        
+                        if ($pulau === 'Lombok' && $jenisKuota === 'pemasukan') {
+                            return 'Pilih kab/kota di Pulau Lombok untuk kuota pemasukan spesifik per kab/kota';
+                        }
+                        if ($pulau === 'Lombok' && $jenisKuota === 'pengeluaran') {
+                            return 'Kuota pengeluaran dari Pulau Lombok adalah global (tidak perlu pilih kab/kota)';
+                        }
+                        return null;
+                    }),
                 Forms\Components\TextInput::make('tahun')
                     ->label('Tahun')
                     ->required()
