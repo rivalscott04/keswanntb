@@ -55,29 +55,12 @@ class DokumenPengajuanResource extends Resource
                     ->downloadable()
                     ->openable()
                     ->previewable(false)
-                    ->required()
-                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                        if ($state) {
-                            $set('nama_file', $state);
-                            $set('tipe_file', pathinfo($state, PATHINFO_EXTENSION));
-                            $set('ukuran_file', filesize(storage_path('app/public/' . $state)));
-                        }
-                    }),
+                    ->required(),
                 
                 Forms\Components\TextInput::make('nama_file')
                     ->label('Nama File')
                     ->required()
                     ->maxLength(255),
-                
-                Forms\Components\TextInput::make('tipe_file')
-                    ->label('Tipe File')
-                    ->maxLength(255)
-                    ->disabled(),
-                
-                Forms\Components\TextInput::make('ukuran_file')
-                    ->label('Ukuran File (bytes)')
-                    ->maxLength(255)
-                    ->disabled(),
                 
                 Forms\Components\Textarea::make('keterangan')
                     ->label('Keterangan')
@@ -132,10 +115,6 @@ class DokumenPengajuanResource extends Resource
                     ->label('Nama File')
                     ->searchable()
                     ->limit(30),
-                
-                Tables\Columns\TextColumn::make('ukuran_file_display')
-                    ->label('Ukuran')
-                    ->getStateUsing(fn ($record) => $record->ukuran_file_display),
                 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
