@@ -118,49 +118,52 @@ class Pengajuan extends Model
             }
         } else {
             // Untuk pengajuan pemasukan/pengeluaran
-            // Kuota pemasukan ke Lombok: per kab/kota (spesifik)
-            // Kuota pengeluaran dari Lombok: global
-            if ($isLombokTujuan) {
-                // Pemasukan ke Lombok: per kab/kota
-                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
-                    $this->tahun_pengajuan,
-                    $this->jenis_ternak_id,
-                    $this->kab_kota_tujuan_id,
-                    $this->jenis_kelamin,
-                    'pemasukan',
-                    'Lombok'
-                );
+            if ($this->jenis_pengajuan === 'pemasukan') {
+                // Untuk pengajuan pemasukan, cek kuota pemasukan ke tujuan
+                // Kuota pemasukan ke Lombok: per kab/kota (spesifik)
+                if ($isLombokTujuan) {
+                    // Pemasukan ke Lombok: per kab/kota
+                    $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
+                        $this->tahun_pengajuan,
+                        $this->jenis_ternak_id,
+                        $this->kab_kota_tujuan_id,
+                        $this->jenis_kelamin,
+                        'pemasukan',
+                        'Lombok'
+                    );
+                } else {
+                    // Pemasukan ke kab/kota lain: per kab/kota
+                    $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
+                        $this->tahun_pengajuan,
+                        $this->jenis_ternak_id,
+                        $this->kab_kota_tujuan_id,
+                        $this->jenis_kelamin,
+                        'pemasukan'
+                    );
+                }
+                return $kuotaPemasukan;
             } else {
-                // Pemasukan ke kab/kota lain: per kab/kota
-                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
-                    $this->tahun_pengajuan,
-                    $this->jenis_ternak_id,
-                    $this->kab_kota_tujuan_id,
-                    $this->jenis_kelamin,
-                    'pemasukan'
-                );
+                // Untuk pengajuan pengeluaran, hanya cek kuota pengeluaran dari asal
+                // Kuota pengeluaran dari Lombok: global
+                if ($isLombokAsal) {
+                    // Pengeluaran dari Lombok: global
+                    return \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                        $this->tahun_pengajuan,
+                        $this->jenis_ternak_id,
+                        $this->jenis_kelamin,
+                        'pengeluaran'
+                    );
+                } else {
+                    // Pengeluaran dari kab/kota lain: per kab/kota
+                    return \App\Models\PenggunaanKuota::getKuotaTersisa(
+                        $this->tahun_pengajuan,
+                        $this->jenis_ternak_id,
+                        $this->kab_kota_asal_id,
+                        $this->jenis_kelamin,
+                        'pengeluaran'
+                    );
+                }
             }
-
-            if ($isLombokAsal) {
-                // Pengeluaran dari Lombok: global
-                $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
-                    $this->tahun_pengajuan,
-                    $this->jenis_ternak_id,
-                    $this->jenis_kelamin,
-                    'pengeluaran'
-                );
-            } else {
-                // Pengeluaran dari kab/kota lain: per kab/kota
-                $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisa(
-                    $this->tahun_pengajuan,
-                    $this->jenis_ternak_id,
-                    $this->kab_kota_asal_id,
-                    $this->jenis_kelamin,
-                    'pengeluaran'
-                );
-            }
-
-            return min($kuotaPemasukan, $kuotaPengeluaran);
         }
     }
 

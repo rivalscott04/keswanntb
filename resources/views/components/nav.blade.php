@@ -18,22 +18,34 @@
             Dokumen</a>
         </li>
       </ul>
+      @if (auth()->check())
+      <ul class="flex list-none flex-col lg:ml-auto lg:flex-row">
+        <li class="flex items-center">
+          <a href="/admin"
+            class="ml-3 mb-3 rounded bg-white px-4 py-2 text-xs font-bold uppercase text-gray-800 shadow outline-none hover:shadow-md focus:outline-none active:bg-gray-100 lg:mr-1 lg:mb-0"
+            type="button" style="transition: all 0.15s ease 0s;">
+            <i class="fas fa-home"></i> Dasbor
+          </a>
+        </li>
+      </ul>
+      @else
       <ul class="flex list-none flex-col lg:ml-auto lg:flex-row">
         <li class="flex items-center">
           <a href="/admin/login"
             class="ml-3 mb-3 rounded bg-white px-4 py-2 text-xs font-bold uppercase text-gray-800 shadow outline-none hover:shadow-md focus:outline-none active:bg-gray-100 lg:mr-1 lg:mb-0"
             type="button" style="transition: all 0.15s ease 0s;">
-            <i class="fas fa-arrow-alt-circle-down"></i> Masuk
+            <i class="fas fa-sign-in-alt"></i> Masuk
           </a>
         </li>
         <li class="flex items-center">
           <a href="{{ route('daftar') }}"
             class="ml-3 mb-3 rounded bg-white px-4 py-2 text-xs font-bold uppercase text-gray-800 shadow outline-none hover:shadow-md focus:outline-none active:bg-gray-100 lg:mr-1 lg:mb-0"
             type="button" style="transition: all 0.15s ease 0s;">
-            <i class="fas fa-arrow-alt-circle-down"></i> Daftar
+            <i class="fas fa-user-plus"></i> Daftar
           </a>
         </li>
       </ul>
+      @endif
     </div>
   </div>
 </nav>

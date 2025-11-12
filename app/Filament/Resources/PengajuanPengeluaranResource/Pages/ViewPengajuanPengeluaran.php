@@ -47,20 +47,6 @@ class ViewPengajuanPengeluaran extends ViewRecord
                     Textarea::make('catatan')
                         ->label('Catatan')
                         ->required(),
-                    Placeholder::make('kuota_info')
-                        ->label('Informasi Kuota')
-                        ->content(function ($record) {
-                            $record = $this->record;
-                            if ($record->is_lombok) {
-                                return "📋 **Pulau Lombok**: Kuota terintegrasi untuk semua kab/kota di Lombok\n" .
-                                       "📊 **Kuota Tersedia**: {$record->kuota_tersedia} ekor\n" .
-                                       "📝 **Jumlah Diajukan**: {$record->jumlah_ternak} ekor";
-                            } else {
-                                return "📊 **Kuota Tersedia**: {$record->kuota_tersedia} ekor\n" .
-                                       "📝 **Jumlah Diajukan**: {$record->jumlah_ternak} ekor";
-                            }
-                        })
-                        ->columnSpanFull(),
                 ])
                 ->action(fn(array $data) => PengajuanService::verifikasi($this->record, auth()->user(), $data)),
             Actions\Action::make('tolak')
@@ -76,20 +62,6 @@ class ViewPengajuanPengeluaran extends ViewRecord
                             $record = $this->record;
                             return $record->is_kuota_penuh ? 'Kuota sudah penuh' : null;
                         }),
-                    Placeholder::make('kuota_info')
-                        ->label('Informasi Kuota')
-                        ->content(function ($record) {
-                            $record = $this->record;
-                            if ($record->is_lombok) {
-                                return "📋 **Pulau Lombok**: Kuota terintegrasi untuk semua kab/kota di Lombok\n" .
-                                       "📊 **Kuota Tersedia**: {$record->kuota_tersedia} ekor\n" .
-                                       "📝 **Jumlah Diajukan**: {$record->jumlah_ternak} ekor";
-                            } else {
-                                return "📊 **Kuota Tersedia**: {$record->kuota_tersedia} ekor\n" .
-                                       "📝 **Jumlah Diajukan**: {$record->jumlah_ternak} ekor";
-                            }
-                        })
-                        ->columnSpanFull(),
                 ])
                 ->action(fn(array $data) => PengajuanService::tolak($this->record, auth()->user(), $data)),
             Actions\Action::make('ajukan_kembali')
@@ -125,24 +97,41 @@ class ViewPengajuanPengeluaran extends ViewRecord
                                 'diproses' => 'warning',
                                 'selesai' => 'success',
                             }),
-                        Infolists\Components\TextEntry::make('kuota_tersedia')
-                            ->label('Kuota Tersedia')
-                            ->badge()
-                            ->color(fn($record) => $record->is_kuota_penuh ? 'danger' : 'success')
-                            ->formatStateUsing(function($record) {
-                                if ($record->is_kuota_penuh) {
-                                    return 'Kuota Penuh';
-                                }
-                                if ($record->is_lombok) {
-                                    return $record->kuota_tersedia . ' ekor (Pulau Lombok)';
-                                }
-                                return $record->kuota_tersedia . ' ekor';
-                            }),
                         Infolists\Components\TextEntry::make('jumlah_ternak')
                             ->label('Jumlah Ternak yang Diajukan')
                             ->badge()
                             ->color('info'),
                     ])->columns(2),
+
+                Infolists\Components\Section::make('Informasi Kuota')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('id')
+                            ->label('Sisa Kuota Pengeluaran')
+                            ->badge()
+                            ->color(function($record) {
+                                $kuotaSisa = $this->getKuotaPengeluaranAsal($record);
+                                return $kuotaSisa <= 0 ? 'danger' : ($kuotaSisa < $record->jumlah_ternak ? 'warning' : 'success');
+                            })
+                            ->formatStateUsing(function($record) {
+                                return $this->getKuotaPengeluaranAsal($record) . ' ekor';
+                            }),
+                        Infolists\Components\TextEntry::make('id')
+                            ->label('Status Kuota')
+                            ->badge()
+                            ->color(function($record) {
+                                $kuotaSisa = $this->getKuotaPengeluaranAsal($record);
+                                $jumlahDiajukan = $record->jumlah_ternak;
+                                return $kuotaSisa < $jumlahDiajukan ? 'danger' : 'success';
+                            })
+                            ->formatStateUsing(function($record) {
+                                $kuotaSisa = $this->getKuotaPengeluaranAsal($record);
+                                $jumlahDiajukan = $record->jumlah_ternak;
+                                if ($kuotaSisa < $jumlahDiajukan) {
+                                    return 'Kuota Tidak Cukup';
+                                }
+                                return 'Kuota Tersedia';
+                            }),
+                    ])->columns(),
 
                 Infolists\Components\Section::make('Lokasi')
                     ->schema([
@@ -206,5 +195,42 @@ class ViewPengajuanPengeluaran extends ViewRecord
                             ->visible(fn($state) => $state),
                     ])->columns(2),
             ]);
+    }
+
+    /**
+     * Get sisa kuota pengeluaran dari asal
+     */
+    private function getKuotaPengeluaranAsal($record): int
+    {
+        // Daftar kab/kota di pulau Lombok
+        $kabKotaLombok = [
+            'Kota Mataram',
+            'Kab. Lombok Barat', 
+            'Kab. Lombok Tengah',
+            'Kab. Lombok Timur',
+            'Kab. Lombok Utara'
+        ];
+
+        $kabKotaAsal = $record->kabKotaAsal;
+        $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
+
+        if ($isLombokAsal) {
+            // Pengeluaran dari Lombok: global
+            return \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                $record->tahun_pengajuan,
+                $record->jenis_ternak_id,
+                $record->jenis_kelamin,
+                'pengeluaran'
+            );
+        } else {
+            // Pengeluaran dari kab/kota lain: per kab/kota
+            return \App\Models\PenggunaanKuota::getKuotaTersisa(
+                $record->tahun_pengajuan,
+                $record->jenis_ternak_id,
+                $record->kab_kota_asal_id,
+                $record->jenis_kelamin,
+                'pengeluaran'
+            );
+        }
     }
 }
