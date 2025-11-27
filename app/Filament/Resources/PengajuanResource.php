@@ -257,7 +257,8 @@ class PengajuanResource extends Resource
                         Forms\Components\TextInput::make('nomor_skkh')
                             ->label('No. SKKH')
                             ->required()
-                            ->helperText('SKKH akan diupload oleh dinas kab/kota asal ternak'),
+                            ->helperText('SKKH akan diupload oleh dinas kab/kota asal ternak')
+                            ->hiddenOn('create'),
 
                         Forms\Components\FileUpload::make('hasil_uji_lab')
                             ->label('Hasil Uji Lab')

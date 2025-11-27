@@ -46,8 +46,9 @@ class PengajuanService
             'catatan' => $data['catatan'] ?? null,
         ]);
 
-        // Jika tahap saat ini Disnak Provinsi, lakukan pencatatan penggunaan kuota dan update status ke 'disetujui', lalu lanjut ke DPMPTSP
-        if ($record->tahapVerifikasi->nama === 'Disnak Provinsi') {
+        // Jika tahap saat ini Disnak Provinsi (urutan 4), lakukan pencatatan penggunaan kuota dan update status ke 'disetujui', lalu lanjut ke DPMPTSP
+        // Kuota akan berkurang ketika Disnak Provinsi menyetujui pengajuan
+        if ($record->tahapVerifikasi->urutan === 4) {
             if ($record->jenis_pengajuan === 'antar_kab_kota') {
                 // Untuk pengajuan antar kab/kota, hanya catat penggunaan kuota pengeluaran dari asal
                 self::catatPenggunaanKuota($record, 'pengeluaran');
@@ -178,9 +179,20 @@ class PengajuanService
 
     /**
      * Catat penggunaan kuota untuk pengajuan
+     * Kuota akan berkurang ketika Disnak Provinsi menyetujui pengajuan
      */
     public static function catatPenggunaanKuota(Pengajuan $pengajuan, $jenisPenggunaan)
     {
+        // Cek apakah penggunaan kuota untuk jenis ini sudah pernah dicatat
+        $sudahDicatat = PenggunaanKuota::where('pengajuan_id', $pengajuan->id)
+            ->where('jenis_penggunaan', $jenisPenggunaan)
+            ->exists();
+        
+        if ($sudahDicatat) {
+            // Jika sudah pernah dicatat, skip untuk mencegah duplikasi
+            return;
+        }
+
         $kabKotaId = $jenisPenggunaan === 'pengeluaran' 
             ? $pengajuan->kab_kota_asal_id 
             : $pengajuan->kab_kota_tujuan_id;
