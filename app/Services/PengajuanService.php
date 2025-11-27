@@ -49,11 +49,16 @@ class PengajuanService
         // Jika tahap saat ini Disnak Provinsi (urutan 4), lakukan pencatatan penggunaan kuota dan update status ke 'disetujui', lalu lanjut ke DPMPTSP
         // Kuota akan berkurang ketika Disnak Provinsi menyetujui pengajuan
         if ($record->tahapVerifikasi->urutan === 4) {
-            if ($record->jenis_pengajuan === 'antar_kab_kota') {
-                // Untuk pengajuan antar kab/kota, hanya catat penggunaan kuota pengeluaran dari asal
+            if ($record->jenis_pengajuan === 'pemasukan') {
+                // Untuk pengajuan pemasukan, hanya catat kuota pemasukan ke tujuan
+                self::catatPenggunaanKuota($record, 'pemasukan');
+            } elseif ($record->jenis_pengajuan === 'pengeluaran') {
+                // Untuk pengajuan pengeluaran, hanya catat kuota pengeluaran dari asal
                 self::catatPenggunaanKuota($record, 'pengeluaran');
-            } else {
-                // Untuk pengajuan pemasukan/pengeluaran, catat kedua kuota
+            } elseif ($record->jenis_pengajuan === 'antar_kab_kota') {
+                // Untuk pengajuan antar kab/kota, catat kedua kuota:
+                // 1. Kuota pengeluaran dari kab/kota asal
+                // 2. Kuota pemasukan ke kab/kota tujuan
                 self::catatPenggunaanKuota($record, 'pengeluaran');
                 self::catatPenggunaanKuota($record, 'pemasukan');
             }
