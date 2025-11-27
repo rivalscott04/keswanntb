@@ -184,7 +184,8 @@ class PengajuanPemasukanResource extends Resource
                         // SKKH akan diupload oleh dinas kab/kota asal ternak
                         Forms\Components\TextInput::make('nomor_skkh')
                             ->label('No. SKKH')
-                            ->helperText('SKKH akan diupload oleh dinas kab/kota asal ternak'),
+                            ->helperText('SKKH akan diupload oleh dinas kab/kota asal ternak')
+                            ->hiddenOn('create'),
                         Forms\Components\FileUpload::make('hasil_uji_lab')
                             ->label('Hasil Uji Lab')
                             ->acceptedFileTypes(['application/pdf']),
