@@ -216,6 +216,15 @@ class PengajuanPengeluaranResource extends Resource
                 Tables\Columns\TextColumn::make('tanggal_surat_permohonan')
                     ->label('Tanggal')
                     ->date(),
+                Tables\Columns\TextColumn::make('user.nama_perusahaan')
+                    ->label('Perusahaan/Instansi')
+                    ->searchable(query: function ($query, $search) {
+                        return $query->whereHas('user', function ($q) use ($search) {
+                            $q->where('nama_perusahaan', 'like', "%{$search}%")
+                              ->orWhere('name', 'like', "%{$search}%");
+                        });
+                    })
+                    ->formatStateUsing(fn($state, $record) => $state ?: ($record->user->name ?? '-')),
                 Tables\Columns\TextColumn::make('kabKotaAsal.nama')
                     ->label('Asal'),
                 Tables\Columns\TextColumn::make('provinsiTujuan.nama')

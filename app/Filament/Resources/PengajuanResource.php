@@ -57,7 +57,7 @@ class PengajuanResource extends Resource
             $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
             $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
 
-            // Untuk pengajuan antar kab/kota, hanya cek kuota pengeluaran dari asal
+            // Untuk pengajuan antar kab/kota, cek kuota pengeluaran dari asal
             if ($isLombokAsal) {
                 // Kuota pengeluaran dari pulau Lombok
                 $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
@@ -72,10 +72,30 @@ class PengajuanResource extends Resource
                 $lokasiKuota = $kabKotaAsal ? $kabKotaAsal->nama : 'Tidak Diketahui';
             }
 
+            // Cek kuota pemasukan ke tujuan
+            $kuotaPemasukan = 0;
+            $lokasiPemasukan = 'Tidak Diketahui';
+            if ($kabKotaTujuanId) {
+                // Untuk pemasukan, selalu gunakan kuota per kab/kota
+                // Kuota pemasukan untuk Lombok adalah per kab/kota (spesifik), bukan global
+                // Kuota pemasukan untuk Sumbawa juga per kab/kota
+                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
+                    $tahun, 
+                    $jenisTernakId, 
+                    $kabKotaTujuanId, 
+                    $jenisKelamin, 
+                    'pemasukan', 
+                    $isLombokTujuan ? 'Lombok' : null
+                );
+                $lokasiPemasukan = $kabKotaTujuan ? $kabKotaTujuan->nama : 'Tidak Diketahui';
+            }
+
             return [
                 'kuota' => $kuotaPengeluaran,
                 'lokasi' => $lokasiKuota,
-                'pengeluaran' => $kuotaPengeluaran
+                'pengeluaran' => $kuotaPengeluaran,
+                'pemasukan' => $kuotaPemasukan,
+                'lokasi_pemasukan' => $lokasiPemasukan
             ];
         };
 
@@ -204,9 +224,14 @@ class PengajuanResource extends Resource
                             ->maxValue(
                                 fn(callable $get) => $cekKuotaTersedia($get)['kuota']
                             )
-                            ->helperText(
-                                fn(callable $get) => 'Kuota tersedia: ' . $cekKuotaTersedia($get)['kuota'] . ' (Pengeluaran - ' . $cekKuotaTersedia($get)['lokasi'] . ')'
-                            )
+                            ->helperText(function (callable $get) use ($cekKuotaTersedia) {
+                                $kuotaData = $cekKuotaTersedia($get);
+                                $text = 'Kuota tersedia: ' . $kuotaData['kuota'] . ' (Pengeluaran - ' . $kuotaData['lokasi'] . ')';
+                                if ($kuotaData['pemasukan'] > 0 || $get('kab_kota_tujuan_id')) {
+                                    $text .= ' | ' . $kuotaData['pemasukan'] . ' (Pemasukan - ' . $kuotaData['lokasi_pemasukan'] . ')';
+                                }
+                                return $text;
+                            })
                             ->required()
                             ->reactive()
                             ->columnSpanFull(),
@@ -259,6 +284,15 @@ class PengajuanResource extends Resource
                 Tables\Columns\TextColumn::make('tanggal_surat_permohonan')
                     ->label('Tanggal')
                     ->date(),
+                Tables\Columns\TextColumn::make('user.nama_perusahaan')
+                    ->label('Perusahaan/Instansi')
+                    ->searchable(query: function ($query, $search) {
+                        return $query->whereHas('user', function ($q) use ($search) {
+                            $q->where('nama_perusahaan', 'like', "%{$search}%")
+                              ->orWhere('name', 'like', "%{$search}%");
+                        });
+                    })
+                    ->formatStateUsing(fn($state, $record) => $state ?: ($record->user->name ?? '-')),
                 Tables\Columns\TextColumn::make('kabKotaAsal.nama')
                     ->label('Asal'),
                 Tables\Columns\TextColumn::make('kabKotaTujuan.nama')

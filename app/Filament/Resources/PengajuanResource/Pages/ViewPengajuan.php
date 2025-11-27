@@ -138,6 +138,21 @@ class ViewPengajuan extends ViewRecord
     {
         return $infolist
             ->schema([
+                Section::make('Informasi Perusahaan/Instansi')
+                    ->schema([
+                        TextEntry::make('user.nama_perusahaan')
+                            ->label('Nama Perusahaan/Instansi')
+                            ->formatStateUsing(fn($state, $record) => $state ?: ($record->user->name ?? '-'))
+                            ->default('-'),
+                        TextEntry::make('user.name')
+                            ->label('Nama Pengaju')
+                            ->visible(fn($record) => $record->user->nama_perusahaan),
+                        TextEntry::make('user.email')
+                            ->label('Email'),
+                        TextEntry::make('user.no_hp')
+                            ->label('No. Telepon'),
+                    ])->columns(2),
+
                 Section::make()
                     ->schema([
                         TextEntry::make('status')
