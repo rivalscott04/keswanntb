@@ -13,7 +13,8 @@ class CreatePengajuanPemasukan extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['user_id'] = auth()->id();
-        $data['tahap_verifikasi_id'] = TahapVerifikasi::where('urutan', 3)->first()->id;
+        // Pemasukan mulai dari urutan 2 (Tujuan) karena skip urutan 3 (Asal)
+        $data['tahap_verifikasi_id'] = TahapVerifikasi::where('urutan', 2)->first()->id;
         $data['status'] = 'menunggu';
         $data['jenis_pengajuan'] = 'pemasukan';
         

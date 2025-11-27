@@ -17,7 +17,7 @@ class PengajuanService
             ->orderBy('urutan')
             ->first();
 
-        // Skip tahap "Disnak Kab/Kota NTB Tujuan" jika pengeluaran
+        // Skip tahap "Disnak Kab/Kota NTB Tujuan" (urutan 2) jika pengeluaran
         if (
             $record->jenis_pengajuan === 'pengeluaran' &&
             $tahapBerikutnya &&
@@ -27,7 +27,7 @@ class PengajuanService
                 ->orderBy('urutan')
                 ->first();
         }
-        // Skip tahap "Disnak Kab/Kota NTB Asal" jika pemasukan
+        // Skip tahap "Disnak Kab/Kota NTB Asal" (urutan 3) jika pemasukan
         if (
             $record->jenis_pengajuan === 'pemasukan' &&
             $tahapBerikutnya &&
@@ -101,9 +101,12 @@ class PengajuanService
 
     public static function ajukanKembali(Pengajuan $record, $user, array $data)
     {
-        $tahap = $record->jenis_pengajuan === 'pemasukan'
-            ? TahapVerifikasi::where('urutan', 3)->first()
-            : TahapVerifikasi::where('urutan', 2)->first();
+        // Untuk pemasukan: mulai dari urutan 2 (Tujuan)
+        // Untuk pengeluaran: mulai dari urutan 3 (Asal)
+        // Untuk antar_kab_kota: mulai dari urutan 2 (Tujuan)
+        $tahap = $record->jenis_pengajuan === 'pemasukan' || $record->jenis_pengajuan === 'antar_kab_kota'
+            ? TahapVerifikasi::where('urutan', 2)->first()
+            : TahapVerifikasi::where('urutan', 3)->first();
         $record->update([
             'status' => 'menunggu',
             'tahap_verifikasi_id' => $tahap->id,
@@ -140,21 +143,22 @@ class PengajuanService
                     ->whereIn('status', ['menunggu', 'diproses']);
             }
         } elseif ($user->wewenang->nama === 'Disnak Kab/Kota') {
-            $tahapAsal = TahapVerifikasi::where('urutan', 2)->first();
-            $tahapTujuan = TahapVerifikasi::where('urutan', 3)->first();
-            $query->whereIn('tahap_verifikasi_id', array_filter([$tahapAsal?->id, $tahapTujuan?->id]))
+            // urutan 2 = Tujuan, urutan 3 = Asal
+            $tahapTujuan = TahapVerifikasi::where('urutan', 2)->first();
+            $tahapAsal = TahapVerifikasi::where('urutan', 3)->first();
+            $query->whereIn('tahap_verifikasi_id', array_filter([$tahapTujuan?->id, $tahapAsal?->id]))
                 ->whereIn('status', ['menunggu', 'diproses'])
-                ->where(function ($q) use ($user, $tahapAsal, $tahapTujuan) {
-                    if ($tahapAsal) {
-                        $q->orWhere(function ($q2) use ($user, $tahapAsal) {
-                            $q2->where('tahap_verifikasi_id', $tahapAsal->id)
-                                ->where('kab_kota_asal_id', $user->kab_kota_id);
-                        });
-                    }
+                ->where(function ($q) use ($user, $tahapTujuan, $tahapAsal) {
                     if ($tahapTujuan) {
                         $q->orWhere(function ($q2) use ($user, $tahapTujuan) {
                             $q2->where('tahap_verifikasi_id', $tahapTujuan->id)
                                 ->where('kab_kota_tujuan_id', $user->kab_kota_id);
+                        });
+                    }
+                    if ($tahapAsal) {
+                        $q->orWhere(function ($q2) use ($user, $tahapAsal) {
+                            $q2->where('tahap_verifikasi_id', $tahapAsal->id)
+                                ->where('kab_kota_asal_id', $user->kab_kota_id);
                         });
                     }
                 });
@@ -200,7 +204,7 @@ class PengajuanService
             ->when($isLombok && $jenisPenggunaan === 'pengeluaran', function ($query) {
                 // Untuk pengeluaran dari Lombok: global (kab_kota_id = null, pulau = 'Lombok')
                 return $query->where('kab_kota_id', null)->where('pulau', 'Lombok');
-            }, function ($query) use ($kabKotaId, $isLombok) {
+            }, function ($query) use ($kabKotaId, $isLombok, $jenisPenggunaan) {
                 // Untuk pemasukan ke Lombok: per kab/kota (kab_kota_id = [id], pulau = 'Lombok')
                 // Untuk Sumbawa dan lainnya: per kab/kota (kab_kota_id = [id], pulau sesuai)
                 $query->where('kab_kota_id', $kabKotaId);

@@ -199,14 +199,7 @@ class Pengajuan extends Model
                 ($this->tahapVerifikasi->urutan === 5 && $this->status === 'disetujui');
         }
         if ($this->tahapVerifikasi->urutan === 2) {
-            // Disnak Kab/Kota Asal
-            return in_array($this->status, ['menunggu', 'diproses']) &&
-                !$this->is_kuota_penuh &&
-                $user->wewenang->nama === 'Disnak Kab/Kota' &&
-                $user->kab_kota_id === $this->kab_kota_asal_id;
-        }
-        if ($this->tahapVerifikasi->urutan === 3) {
-            // Disnak Kab/Kota Tujuan
+            // Disnak Kab/Kota Tujuan (urutan 2)
             if ($this->jenis_pengajuan === 'pengeluaran') {
                 // Pengeluaran skip tahap tujuan
                 return false;
@@ -217,10 +210,29 @@ class Pengajuan extends Model
                     $user->wewenang->nama === 'Disnak Kab/Kota' &&
                     $user->kab_kota_id === $this->kab_kota_tujuan_id;
             }
+            // Untuk pemasukan
             return in_array($this->status, ['menunggu', 'diproses']) &&
                 !$this->is_kuota_penuh &&
                 $user->wewenang->nama === 'Disnak Kab/Kota' &&
                 $user->kab_kota_id === $this->kab_kota_tujuan_id;
+        }
+        if ($this->tahapVerifikasi->urutan === 3) {
+            // Disnak Kab/Kota Asal (urutan 3)
+            if ($this->jenis_pengajuan === 'pemasukan') {
+                // Pemasukan skip tahap asal
+                return false;
+            }
+            if ($this->jenis_pengajuan === 'antar_kab_kota') {
+                // Untuk antar kab/kota, asal tidak perlu cek kuota
+                return in_array($this->status, ['menunggu', 'diproses']) &&
+                    $user->wewenang->nama === 'Disnak Kab/Kota' &&
+                    $user->kab_kota_id === $this->kab_kota_asal_id;
+            }
+            // Untuk pengeluaran
+            return in_array($this->status, ['menunggu', 'diproses']) &&
+                !$this->is_kuota_penuh &&
+                $user->wewenang->nama === 'Disnak Kab/Kota' &&
+                $user->kab_kota_id === $this->kab_kota_asal_id;
         }
         if ($this->tahapVerifikasi->urutan === 4) {
             // Disnak Provinsi
@@ -253,13 +265,7 @@ class Pengajuan extends Model
             return false;
         }
         if ($this->tahapVerifikasi->urutan === 2) {
-            // Disnak Kab/Kota Asal
-            return in_array($this->status, ['menunggu', 'diproses']) &&
-                $user->wewenang->nama === 'Disnak Kab/Kota' &&
-                $user->kab_kota_id === $this->kab_kota_asal_id;
-        }
-        if ($this->tahapVerifikasi->urutan === 3) {
-            // Disnak Kab/Kota Tujuan
+            // Disnak Kab/Kota Tujuan (urutan 2)
             if ($this->jenis_pengajuan === 'pengeluaran') {
                 // Pengeluaran skip tahap tujuan
                 return false;
@@ -267,6 +273,16 @@ class Pengajuan extends Model
             return in_array($this->status, ['menunggu', 'diproses']) &&
                 $user->wewenang->nama === 'Disnak Kab/Kota' &&
                 $user->kab_kota_id === $this->kab_kota_tujuan_id;
+        }
+        if ($this->tahapVerifikasi->urutan === 3) {
+            // Disnak Kab/Kota Asal (urutan 3)
+            if ($this->jenis_pengajuan === 'pemasukan') {
+                // Pemasukan skip tahap asal
+                return false;
+            }
+            return in_array($this->status, ['menunggu', 'diproses']) &&
+                $user->wewenang->nama === 'Disnak Kab/Kota' &&
+                $user->kab_kota_id === $this->kab_kota_asal_id;
         }
         if ($this->tahapVerifikasi->urutan === 4) {
             // Disnak Provinsi

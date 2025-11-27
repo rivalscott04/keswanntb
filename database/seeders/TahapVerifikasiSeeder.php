@@ -15,8 +15,8 @@ class TahapVerifikasiSeeder extends Seeder
     public function run()
     {
         TahapVerifikasi::create(['nama' => 'Pengusaha', 'urutan' => 1]);
-        TahapVerifikasi::create(['nama' => 'Disnak Kab/Kota NTB Asal', 'urutan' => 2]);
-        TahapVerifikasi::create(['nama' => 'Disnak Kab/Kota NTB Tujuan', 'urutan' => 3]);
+        TahapVerifikasi::create(['nama' => 'Disnak Kab/Kota NTB Tujuan', 'urutan' => 2]);
+        TahapVerifikasi::create(['nama' => 'Disnak Kab/Kota NTB Asal', 'urutan' => 3]);
         TahapVerifikasi::create(['nama' => 'Disnak Provinsi', 'urutan' => 4]);
         TahapVerifikasi::create(['nama' => 'DPMPTSP', 'urutan' => 5]);
     }

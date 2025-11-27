@@ -166,7 +166,7 @@ class ContohDataSeeder extends Seeder
             'nomor_surat_permohonan' => 'SP/001/' . $tahun,
             'tanggal_surat_permohonan' => now()->subDays(5),
             'nomor_skkh' => 'SKKH/001/' . $tahun,
-            'tahap_verifikasi_id' => $tahapVerifikasi[1]->id, // Disnak Kab/Kota Asal
+            'tahap_verifikasi_id' => $tahapVerifikasi[1]->id, // Disnak Kab/Kota Tujuan (urutan 2)
             'status' => 'menunggu',
         ]);
 
@@ -188,7 +188,7 @@ class ContohDataSeeder extends Seeder
             'nomor_surat_permohonan' => 'SP/002/' . $tahun,
             'tanggal_surat_permohonan' => now()->subDays(3),
             'nomor_skkh' => 'SKKH/002/' . $tahun,
-            'tahap_verifikasi_id' => $tahapVerifikasi[2]->id, // Disnak Provinsi
+            'tahap_verifikasi_id' => $tahapVerifikasi[3]->id, // Disnak Provinsi (urutan 4)
             'status' => 'diproses',
         ]);
 
