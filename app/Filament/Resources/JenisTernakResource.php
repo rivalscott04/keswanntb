@@ -32,16 +32,34 @@ class JenisTernakResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('kategori_ternak_id')
-                    ->relationship('kategoriTernak', 'nama')
-                    ->required(),
-                Forms\Components\Select::make('bidang_id')
-                    ->relationship('bidang', 'nama')
-                    ->required(),
-                Forms\Components\TextInput::make('nama')
-                    ->required()
-                    ->maxLength(255)
-                    ->columnSpanFull(),
+                Forms\Components\Section::make('Informasi Jenis Ternak')
+                    ->description('Masukkan detail jenis ternak baru.')
+                    ->schema([
+                        Forms\Components\Grid::make([
+                            'default' => 1,
+                            'sm' => 2,
+                        ])
+                        ->schema([
+                            Forms\Components\Select::make('kategori_ternak_id')
+                                ->relationship('kategoriTernak', 'nama')
+                                ->searchable()
+                                ->preload()
+                                ->required()
+                                ->label('Kategori Ternak'),
+                            Forms\Components\Select::make('bidang_id')
+                                ->relationship('bidang', 'nama')
+                                ->searchable()
+                                ->preload()
+                                ->required()
+                                ->label('Bidang'),
+                            Forms\Components\TextInput::make('nama')
+                                ->required()
+                                ->maxLength(255)
+                                ->columnSpanFull()
+                                ->label('Nama Jenis Ternak')
+                                ->placeholder('Contoh: Sapi Bali'),
+                        ]),
+                    ]),
             ]);
     }
 
@@ -49,12 +67,21 @@ class JenisTernakResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('kategoriTernak.nama')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('bidang.nama')
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('nama')
-                    ->searchable(),
+                    ->label('Nama Jenis Ternak')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold'),
+                Tables\Columns\TextColumn::make('kategoriTernak.nama')
+                    ->label('Kategori')
+                    ->sortable()
+                    ->badge()
+                    ->color('info'),
+                Tables\Columns\TextColumn::make('bidang.nama')
+                    ->label('Bidang')
+                    ->sortable()
+                    ->badge()
+                    ->color('success'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -65,7 +92,16 @@ class JenisTernakResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('kategori_ternak_id')
+                    ->relationship('kategoriTernak', 'nama')
+                    ->label('Kategori Ternak')
+                    ->searchable()
+                    ->preload(),
+                Tables\Filters\SelectFilter::make('bidang_id')
+                    ->relationship('bidang', 'nama')
+                    ->label('Bidang')
+                    ->searchable()
+                    ->preload(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

@@ -65,6 +65,29 @@ class Pengajuan extends Model
         return $this->belongsTo(KategoriTernak::class);
     }
 
+    /**
+     * Cek apakah pengajuan ini untuk Bibit Sapi
+     */
+    public function isBibitSapi(): bool
+    {
+        return $this->jenisTernak && $this->jenisTernak->nama === 'Bibit Sapi';
+    }
+
+    /**
+     * Cek apakah pengajuan ini memiliki multiple jenis kelamin (jantan dan betina)
+     */
+    public function hasMultipleJenisKelamin(): bool
+    {
+        if (!$this->isBibitSapi()) {
+            return false;
+        }
+        
+        $jumlahJantan = (int)($this->jumlah_jantan ?? 0);
+        $jumlahBetina = (int)($this->jumlah_betina ?? 0);
+        
+        return $jumlahJantan > 0 && $jumlahBetina > 0;
+    }
+
     public function historiPengajuan(): HasMany
     {
         return $this->hasMany(HistoriPengajuan::class);

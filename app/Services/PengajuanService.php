@@ -188,9 +188,34 @@ class PengajuanService
      */
     public static function catatPenggunaanKuota(Pengajuan $pengajuan, $jenisPenggunaan)
     {
+        // Cek apakah jenis ternak adalah Bibit Sapi
+        $jenisTernak = $pengajuan->jenisTernak;
+        $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
+
+        // Untuk Bibit Sapi, catat kuota jantan dan betina terpisah jika ada
+        if ($isBibitSapi) {
+            $jumlahJantan = (int)($pengajuan->jumlah_jantan ?? 0);
+            $jumlahBetina = (int)($pengajuan->jumlah_betina ?? 0);
+
+            // Catat kuota untuk jantan jika ada (bisa hanya jantan saja)
+            if ($jumlahJantan > 0) {
+                self::catatPenggunaanKuotaPerJenisKelamin($pengajuan, $jenisPenggunaan, 'jantan', $jumlahJantan);
+            }
+
+            // Catat kuota untuk betina jika ada (bisa hanya betina saja)
+            if ($jumlahBetina > 0) {
+                self::catatPenggunaanKuotaPerJenisKelamin($pengajuan, $jenisPenggunaan, 'betina', $jumlahBetina);
+            }
+
+            // Return karena sudah handle untuk Bibit Sapi (baik hanya salah satu atau keduanya)
+            return;
+        }
+
+        // Untuk jenis ternak lain, gunakan logika lama
         // Cek apakah penggunaan kuota untuk jenis ini sudah pernah dicatat
         $sudahDicatat = PenggunaanKuota::where('pengajuan_id', $pengajuan->id)
             ->where('jenis_penggunaan', $jenisPenggunaan)
+            ->where('jenis_kelamin', $pengajuan->jenis_kelamin)
             ->exists();
         
         if ($sudahDicatat) {
@@ -242,6 +267,71 @@ class PengajuanService
                 'tahun' => $pengajuan->tahun_pengajuan,
                 'jenis_ternak_id' => $pengajuan->jenis_ternak_id,
                 'jenis_kelamin' => $pengajuan->jenis_kelamin,
+                'pulau' => $isLombok ? 'Lombok' : $kuota->pulau,
+            ]);
+        }
+    }
+
+    /**
+     * Helper method untuk catat penggunaan kuota per jenis kelamin
+     */
+    private static function catatPenggunaanKuotaPerJenisKelamin(Pengajuan $pengajuan, $jenisPenggunaan, $jenisKelamin, $jumlah)
+    {
+        // Cek apakah penggunaan kuota untuk jenis ini sudah pernah dicatat
+        $sudahDicatat = PenggunaanKuota::where('pengajuan_id', $pengajuan->id)
+            ->where('jenis_penggunaan', $jenisPenggunaan)
+            ->where('jenis_kelamin', $jenisKelamin)
+            ->exists();
+        
+        if ($sudahDicatat) {
+            // Jika sudah pernah dicatat, skip untuk mencegah duplikasi
+            return;
+        }
+
+        $kabKotaId = $jenisPenggunaan === 'pengeluaran' 
+            ? $pengajuan->kab_kota_asal_id 
+            : $pengajuan->kab_kota_tujuan_id;
+
+        // Cek apakah kab/kota ada di pulau Lombok
+        $kabKota = \App\Models\KabKota::find($kabKotaId);
+        $kabKotaLombok = [
+            'Kota Mataram',
+            'Kab. Lombok Barat', 
+            'Kab. Lombok Tengah',
+            'Kab. Lombok Timur',
+            'Kab. Lombok Utara'
+        ];
+        $isLombok = $kabKota && in_array($kabKota->nama, $kabKotaLombok);
+
+        // Ambil kuota yang sesuai
+        $kuota = Kuota::where('tahun', $pengajuan->tahun_pengajuan)
+            ->where('jenis_ternak_id', $pengajuan->jenis_ternak_id)
+            ->where('jenis_kelamin', $jenisKelamin)
+            ->where('jenis_kuota', $jenisPenggunaan)
+            ->when($isLombok && $jenisPenggunaan === 'pengeluaran', function ($query) {
+                // Untuk pengeluaran dari Lombok: global (kab_kota_id = null, pulau = 'Lombok')
+                return $query->where('kab_kota_id', null)->where('pulau', 'Lombok');
+            }, function ($query) use ($kabKotaId, $isLombok, $jenisPenggunaan) {
+                // Untuk pemasukan ke Lombok: per kab/kota (kab_kota_id = [id], pulau = 'Lombok')
+                // Untuk Sumbawa dan lainnya: per kab/kota (kab_kota_id = [id], pulau sesuai)
+                $query->where('kab_kota_id', $kabKotaId);
+                if ($isLombok && $jenisPenggunaan === 'pemasukan') {
+                    $query->where('pulau', 'Lombok');
+                }
+                return $query;
+            })
+            ->first();
+
+        if ($kuota) {
+            PenggunaanKuota::create([
+                'pengajuan_id' => $pengajuan->id,
+                'kuota_id' => $kuota->id,
+                'jumlah_digunakan' => $jumlah,
+                'jenis_penggunaan' => $jenisPenggunaan,
+                'kab_kota_id' => $kabKotaId,
+                'tahun' => $pengajuan->tahun_pengajuan,
+                'jenis_ternak_id' => $pengajuan->jenis_ternak_id,
+                'jenis_kelamin' => $jenisKelamin,
                 'pulau' => $isLombok ? 'Lombok' : $kuota->pulau,
             ]);
         }

@@ -17,6 +17,12 @@
               class="far fa-file-alt leading-lg mr-2 text-lg text-gray-500 lg:text-gray-300"></i>
             Dokumen</a>
         </li>
+        <li class="flex items-center">
+          <a class="flex items-center px-3 py-4 text-xs font-bold uppercase text-gray-800 lg:py-2 lg:text-white lg:hover:text-gray-300"
+            href="{{ route('laporan') }}"><i
+              class="fas fa-chart-bar leading-lg mr-2 text-lg text-gray-500 lg:text-gray-300"></i>
+            Laporan</a>
+        </li>
       </ul>
       @if (auth()->check())
       <ul class="flex list-none flex-col lg:ml-auto lg:flex-row">
