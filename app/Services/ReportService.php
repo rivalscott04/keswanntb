@@ -21,7 +21,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class ReportService
 {
-    public static function generateReport($tanggalMulai, $tanggalAkhir, $jenisTernakIds = [])
+    public static function generateReport($tanggalMulai, $tanggalAkhir, $jenisTernakIds = [], $jenisPengajuan = null)
     {
         $query = Pengajuan::with([
             'user',
@@ -40,6 +40,9 @@ class ReportService
             })
             ->when(!empty($jenisTernakIds), function ($q) use ($jenisTernakIds) {
                 return $q->whereIn('jenis_ternak_id', $jenisTernakIds);
+            })
+            ->when(!empty($jenisPengajuan), function ($q) use ($jenisPengajuan) {
+                return $q->where('jenis_pengajuan', $jenisPengajuan);
             });
 
         $data = $query->get();

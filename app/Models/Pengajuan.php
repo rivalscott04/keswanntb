@@ -105,6 +105,21 @@ class Pengajuan extends Model
 
     public function getKuotaTersediaAttribute()
     {
+        // Cek apakah jenis ternak ini memerlukan kuota
+        $perluKuota = false;
+        if ($this->jenis_pengajuan === 'pengeluaran') {
+            $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pengeluaran');
+        } elseif ($this->jenis_pengajuan === 'pemasukan') {
+            $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pemasukan', $this->kab_kota_tujuan_id);
+        } elseif ($this->jenis_pengajuan === 'antar_kab_kota') {
+            $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pengeluaran');
+        }
+
+        // Jika tidak perlu kuota, return nilai besar untuk menunjukkan tidak ada batasan
+        if (!$perluKuota) {
+            return PHP_INT_MAX;
+        }
+
         // Cek apakah kab/kota asal atau tujuan ada di pulau Lombok
         $kabKotaAsal = $this->kabKotaAsal;
         $kabKotaTujuan = $this->kabKotaTujuan;
@@ -192,6 +207,20 @@ class Pengajuan extends Model
 
     public function getIsKuotaPenuhAttribute()
     {
+        // Jika tidak perlu kuota, selalu return false (tidak pernah penuh)
+        $perluKuota = false;
+        if ($this->jenis_pengajuan === 'pengeluaran') {
+            $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pengeluaran');
+        } elseif ($this->jenis_pengajuan === 'pemasukan') {
+            $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pemasukan', $this->kab_kota_tujuan_id);
+        } elseif ($this->jenis_pengajuan === 'antar_kab_kota') {
+            $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pengeluaran');
+        }
+
+        if (!$perluKuota) {
+            return false;
+        }
+
         return $this->jumlah_ternak > $this->kuota_tersedia;
     }
 

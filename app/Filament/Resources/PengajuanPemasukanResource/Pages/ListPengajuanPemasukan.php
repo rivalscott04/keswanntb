@@ -35,8 +35,18 @@ class ListPengajuanPemasukan extends ListRecords
             // Pengusaha hanya melihat pengajuan miliknya
             return $query->where('user_id', $user->id);
         }
-        if ($user->is_admin || $user->wewenang->nama === 'Disnak Provinsi') {
-            // Admin/Disnak NTB bisa lihat semua
+        if ($user->is_admin) {
+            // Admin bisa lihat semua
+            return $query;
+        }
+        if ($user->wewenang->nama === 'Disnak Provinsi') {
+            // Disnak Provinsi: filter berdasarkan bidang jika ada
+            if ($user->bidang_id) {
+                return $query->whereHas('jenisTernak', function ($q) use ($user) {
+                    $q->where('bidang_id', $user->bidang_id);
+                });
+            }
+            // Jika tidak ada bidang_id, lihat semua
             return $query;
         }
         if ($user->wewenang->nama === 'Disnak Kab/Kota') {

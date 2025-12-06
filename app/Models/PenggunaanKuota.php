@@ -103,4 +103,83 @@ class PenggunaanKuota extends Model
 
         return max(0, $kuotaTotal - $kuotaDigunakan);
     }
+
+    /**
+     * Cek apakah kombinasi jenis ternak, jenis pengajuan, dan lokasi memerlukan kuota
+     * 
+     * Yang memerlukan kuota:
+     * 1. Pengeluaran sapi pedaging
+     * 2. Pengeluaran kerbau pedaging
+     * 3. Pengeluaran sapi bibit
+     * 4. Pemasukan sapi pedaging ke pulau Lombok
+     * 5. Pemasukan sapi eksotik
+     * 
+     * @param int|null $jenisTernakId ID jenis ternak
+     * @param string $jenisPengajuan Jenis pengajuan: 'pemasukan', 'pengeluaran', atau 'antar_kab_kota'
+     * @param int|null $kabKotaTujuanId ID kab/kota tujuan (untuk pemasukan)
+     * @return bool True jika memerlukan kuota, false jika tidak
+     */
+    public static function isKuotaRequired($jenisTernakId, $jenisPengajuan, $kabKotaTujuanId = null)
+    {
+        if (!$jenisTernakId) {
+            return false;
+        }
+
+        $jenisTernak = JenisTernak::find($jenisTernakId);
+        if (!$jenisTernak) {
+            return false;
+        }
+
+        $namaJenisTernak = $jenisTernak->nama;
+
+        // Untuk pengeluaran
+        if ($jenisPengajuan === 'pengeluaran') {
+            // Pengeluaran sapi pedaging
+            if ($namaJenisTernak === 'Sapi') {
+                return true;
+            }
+            // Pengeluaran kerbau pedaging
+            if ($namaJenisTernak === 'Kerbau') {
+                return true;
+            }
+            // Pengeluaran sapi bibit
+            if ($namaJenisTernak === 'Bibit Sapi') {
+                return true;
+            }
+            return false;
+        }
+
+        // Untuk pemasukan
+        if ($jenisPengajuan === 'pemasukan') {
+            // Pemasukan sapi pedaging ke pulau Lombok
+            if ($namaJenisTernak === 'Sapi' && $kabKotaTujuanId) {
+                $kabKotaTujuan = KabKota::find($kabKotaTujuanId);
+                if ($kabKotaTujuan) {
+                    $kabKotaLombok = [
+                        'Kota Mataram',
+                        'Kab. Lombok Barat',
+                        'Kab. Lombok Tengah',
+                        'Kab. Lombok Timur',
+                        'Kab. Lombok Utara'
+                    ];
+                    if (in_array($kabKotaTujuan->nama, $kabKotaLombok)) {
+                        return true;
+                    }
+                }
+            }
+            // Pemasukan sapi eksotik
+            if ($namaJenisTernak === 'Sapi Eksotik') {
+                return true;
+            }
+            return false;
+        }
+
+        // Untuk antar kab/kota, cek berdasarkan pengeluaran dari asal
+        if ($jenisPengajuan === 'antar_kab_kota') {
+            // Gunakan logika pengeluaran (hanya cek dari asal)
+            return self::isKuotaRequired($jenisTernakId, 'pengeluaran');
+        }
+
+        return false;
+    }
 }

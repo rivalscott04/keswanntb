@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Kuota;
+use App\Models\JenisTernak;
 use App\Models\PenggunaanKuota;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -13,46 +14,63 @@ class KuotaOverviewWidget extends BaseWidget
     protected static ?int $sort = 2;
 
     public ?int $tahun = null;
+    public ?int $jenisTernakId = null;
 
     protected static ?string $pollingInterval = '30s';
 
     public function mount(): void
     {
         $this->tahun = now()->year;
+        $this->jenisTernakId = null; // Default: Semua jenis ternak
     }
 
     protected function getStats(): array
     {
         // Gunakan tahun yang dipilih atau default ke tahun berjalan
         $tahun = $this->tahun ?? now()->year;
+        $jenisTernakId = $this->jenisTernakId;
+
+        // Base query dengan filter jenis ternak jika dipilih
+        $kuotaPemasukanQuery = Kuota::where('tahun', $tahun)
+            ->where('jenis_kuota', 'pemasukan');
+        
+        $penggunaanPemasukanQuery = PenggunaanKuota::where('tahun', $tahun)
+            ->where('jenis_penggunaan', 'pemasukan');
+
+        $kuotaPengeluaranQuery = Kuota::where('tahun', $tahun)
+            ->where('jenis_kuota', 'pengeluaran');
+        
+        $penggunaanPengeluaranQuery = PenggunaanKuota::where('tahun', $tahun)
+            ->where('jenis_penggunaan', 'pengeluaran');
+
+        // Terapkan filter jenis ternak jika dipilih
+        if ($jenisTernakId) {
+            $kuotaPemasukanQuery->where('jenis_ternak_id', $jenisTernakId);
+            $penggunaanPemasukanQuery->where('jenis_ternak_id', $jenisTernakId);
+            $kuotaPengeluaranQuery->where('jenis_ternak_id', $jenisTernakId);
+            $penggunaanPengeluaranQuery->where('jenis_ternak_id', $jenisTernakId);
+        }
 
         // Hitung kuota pemasukan
-        $totalKuotaPemasukan = Kuota::where('tahun', $tahun)
-            ->where('jenis_kuota', 'pemasukan')
-            ->sum('kuota');
-        
-        $terpakaiPemasukan = PenggunaanKuota::where('tahun', $tahun)
-            ->where('jenis_penggunaan', 'pemasukan')
-            ->sum('jumlah_digunakan');
-        
+        $totalKuotaPemasukan = $kuotaPemasukanQuery->sum('kuota');
+        $terpakaiPemasukan = $penggunaanPemasukanQuery->sum('jumlah_digunakan');
         $sisaPemasukan = max(0, $totalKuotaPemasukan - $terpakaiPemasukan);
         $persentasePemasukan = $totalKuotaPemasukan > 0 
             ? round(($terpakaiPemasukan / $totalKuotaPemasukan) * 100, 2) 
             : 0;
 
         // Hitung kuota pengeluaran
-        $totalKuotaPengeluaran = Kuota::where('tahun', $tahun)
-            ->where('jenis_kuota', 'pengeluaran')
-            ->sum('kuota');
-        
-        $terpakaiPengeluaran = PenggunaanKuota::where('tahun', $tahun)
-            ->where('jenis_penggunaan', 'pengeluaran')
-            ->sum('jumlah_digunakan');
-        
+        $totalKuotaPengeluaran = $kuotaPengeluaranQuery->sum('kuota');
+        $terpakaiPengeluaran = $penggunaanPengeluaranQuery->sum('jumlah_digunakan');
         $sisaPengeluaran = max(0, $totalKuotaPengeluaran - $terpakaiPengeluaran);
         $persentasePengeluaran = $totalKuotaPengeluaran > 0 
             ? round(($terpakaiPengeluaran / $totalKuotaPengeluaran) * 100, 2) 
             : 0;
+
+        // Tambahkan info jenis ternak yang dipilih
+        $jenisTernakLabel = $jenisTernakId 
+            ? JenisTernak::find($jenisTernakId)?->nama ?? 'Tidak Diketahui'
+            : 'Semua Jenis';
 
         return [
             Stat::make('Total Kuota Pemasukan', number_format($totalKuotaPemasukan, 0, ',', '.'))
@@ -92,13 +110,22 @@ class KuotaOverviewWidget extends BaseWidget
             $tahunTersedia = range($currentYear, $currentYear - 4);
         }
 
-        // Buat array options untuk select
-        $options = array_combine($tahunTersedia, $tahunTersedia);
+        // Buat array options untuk select tahun
+        $tahunOptions = array_combine($tahunTersedia, $tahunTersedia);
+
+        // Ambil daftar jenis ternak yang memiliki kuota
+        $jenisTernakOptions = JenisTernak::whereHas('kuotas')
+            ->orderBy('nama')
+            ->pluck('nama', 'id')
+            ->toArray();
+
+        // Tambahkan opsi "Semua" di awal
+        $jenisTernakOptions = ['' => 'Semua Jenis Ternak'] + $jenisTernakOptions;
 
         return [
             Select::make('tahun')
                 ->label('Tahun')
-                ->options($options)
+                ->options($tahunOptions)
                 ->default(now()->year)
                 ->searchable()
                 ->reactive()
@@ -106,7 +133,16 @@ class KuotaOverviewWidget extends BaseWidget
                     $this->tahun = $state;
                     $this->dispatch('updateStats');
                 }),
+            Select::make('jenisTernakId')
+                ->label('Jenis Ternak')
+                ->options($jenisTernakOptions)
+                ->default('')
+                ->searchable()
+                ->reactive()
+                ->afterStateUpdated(function ($state) {
+                    $this->jenisTernakId = $state ?: null;
+                    $this->dispatch('updateStats');
+                }),
         ];
     }
 }
-

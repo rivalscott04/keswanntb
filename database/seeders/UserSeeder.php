@@ -26,14 +26,36 @@ class UserSeeder extends Seeder
             'is_admin' => true,
         ]);
 
-        // Disnak Provinsi user
+        // Disnak Provinsi user - Bidang P3HP
         User::create([
-            'name' => 'Disnak Provinsi',
+            'name' => 'Disnak Provinsi P3HP',
             'email' => 'disnakprovinsi@example.com',
             'password' => Hash::make('password'),
             'wewenang_id' => 2,
-            'bidang_id' => 1,
+            'bidang_id' => 1, // P3HP
             'no_hp' => '081234567891',
+            'alamat' => 'Jl. Airlangga No. 56',
+        ]);
+
+        // Disnak Provinsi user - Bidang Kesmavet
+        User::create([
+            'name' => 'Disnak Provinsi Kesmavet',
+            'email' => 'disnakprovinsi.kesmavet@example.com',
+            'password' => Hash::make('password'),
+            'wewenang_id' => 2,
+            'bidang_id' => 2, // Kesmavet
+            'no_hp' => '081234567892',
+            'alamat' => 'Jl. Airlangga No. 56',
+        ]);
+
+        // Disnak Provinsi user - Bidang Keswan
+        User::create([
+            'name' => 'Disnak Provinsi Keswan',
+            'email' => 'disnakprovinsi.keswan@example.com',
+            'password' => Hash::make('password'),
+            'wewenang_id' => 2,
+            'bidang_id' => 3, // Keswan
+            'no_hp' => '081234567893',
             'alamat' => 'Jl. Airlangga No. 56',
         ]);
 
@@ -61,7 +83,7 @@ class UserSeeder extends Seeder
             'email' => 'dpmptsp@example.com',
             'password' => Hash::make('password'),
             'wewenang_id' => 4,
-            'no_hp' => '081234567893',
+            'no_hp' => '081234567900',
             'alamat' => 'Jl. Udayana No. 4',
         ]);
 

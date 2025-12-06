@@ -188,6 +188,13 @@ class PengajuanService
      */
     public static function catatPenggunaanKuota(Pengajuan $pengajuan, $jenisPenggunaan)
     {
+        // Cek apakah jenis ternak ini memerlukan kuota
+        $kabKotaTujuanId = $jenisPenggunaan === 'pemasukan' ? $pengajuan->kab_kota_tujuan_id : null;
+        if (!PenggunaanKuota::isKuotaRequired($pengajuan->jenis_ternak_id, $jenisPenggunaan === 'pemasukan' ? 'pemasukan' : 'pengeluaran', $kabKotaTujuanId)) {
+            // Jika tidak perlu kuota, skip pencatatan
+            return;
+        }
+
         // Cek apakah jenis ternak adalah Bibit Sapi
         $jenisTernak = $pengajuan->jenisTernak;
         $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';

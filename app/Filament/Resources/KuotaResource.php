@@ -48,6 +48,7 @@ class KuotaResource extends Resource
                     ->options([
                         'jantan' => 'Jantan',
                         'betina' => 'Betina',
+                        'gabung' => 'Gabung',
                     ])
                     ->required(),
                 Forms\Components\Select::make('pulau')

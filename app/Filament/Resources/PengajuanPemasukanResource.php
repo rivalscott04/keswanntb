@@ -41,6 +41,11 @@ class PengajuanPemasukanResource extends Resource
                 return 0;
             }
 
+            // Cek apakah jenis ternak ini memerlukan kuota
+            if (!\App\Models\PenggunaanKuota::isKuotaRequired($jenisTernakId, 'pemasukan', $kabKotaTujuanId)) {
+                return 'Tidak ada kuota (bebas masuk)';
+            }
+
             // Daftar kab/kota di pulau Lombok
             $kabKotaLombok = [
                 'Kota Mataram',
@@ -87,7 +92,7 @@ class PengajuanPemasukanResource extends Resource
                             ->required()
                             ->columnSpanFull(),
                         Forms\Components\TextInput::make('kab_kota_asal')
-                            ->label('Kota Asal Ternak')
+                            ->label('Kabupaten/Kota Asal Ternak')
                             ->required(),
                         Forms\Components\Select::make('pelabuhan_asal')
                             ->label('Nama Pelabuhan Asal')
@@ -109,7 +114,7 @@ class PengajuanPemasukanResource extends Resource
 
                         // TUJUAN (NTB)
                         Forms\Components\Select::make('kab_kota_tujuan_id')
-                            ->label('Kota Tujuan Ternak')
+                            ->label('Kabupaten/Kota Tujuan Ternak')
                             ->relationship('kabKotaTujuan', 'nama')
                             ->searchable()
                             ->preload()
@@ -154,6 +159,7 @@ class PengajuanPemasukanResource extends Resource
                             ->options([
                                 'jantan' => 'Jantan',
                                 'betina' => 'Betina',
+                                'gabung' => 'Gabung',
                             ])
                             ->required()
                             ->live(),
@@ -164,7 +170,24 @@ class PengajuanPemasukanResource extends Resource
                             ->label('Jumlah Ternak')
                             ->numeric()
                             ->minValue(1)
+                            ->maxValue(function (callable $get) use ($cekKuotaPemasukan) {
+                                $kuota = $cekKuotaPemasukan($get);
+                                // Jika tidak ada kuota atau string, tidak ada batasan maksimal
+                                if (!is_numeric($kuota)) {
+                                    return null;
+                                }
+                                return $kuota;
+                            })
                             ->helperText(fn(callable $get) => 'Kuota tersedia: ' . $cekKuotaPemasukan($get))
+                            ->rules([
+                                fn (callable $get) => function (string $attribute, $value, \Closure $fail) use ($get, $cekKuotaPemasukan) {
+                                    $kuota = $cekKuotaPemasukan($get);
+                                    // Validasi hanya jika ada kuota (numeric)
+                                    if (is_numeric($kuota) && (int)$value > (int)$kuota) {
+                                        $fail("Jumlah ternak ({$value}) melebihi kuota tersedia ({$kuota}).");
+                                    }
+                                },
+                            ])
                             ->required()
                             ->reactive()
                             ->columnSpanFull(),
@@ -221,9 +244,9 @@ class PengajuanPemasukanResource extends Resource
                 Tables\Columns\TextColumn::make('provinsiAsal.nama')
                     ->label('Provinsi Asal'),
                 Tables\Columns\TextColumn::make('kabKotaAsal.nama')
-                    ->label('Kota Asal'),
+                    ->label('Kab/Kota Asal'),
                 Tables\Columns\TextColumn::make('kabKotaTujuan.nama')
-                    ->label('Tujuan'),
+                    ->label('Kab/Kota Tujuan'),
                 Tables\Columns\TextColumn::make('jenisTernak.nama')
                     ->label('Jenis Ternak'),
                 Tables\Columns\TextColumn::make('jumlah_ternak')

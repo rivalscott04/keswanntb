@@ -157,7 +157,7 @@ class ViewPengajuanPengeluaran extends ViewRecord
                         Infolists\Components\TextEntry::make('provinsiTujuan.nama')
                             ->label('Provinsi Tujuan'),
                         Infolists\Components\TextEntry::make('kab_kota_tujuan')
-                            ->label('Kota Tujuan'),
+                            ->label('Kabupaten/Kota Tujuan'),
                         Infolists\Components\TextEntry::make('pelabuhan_tujuan')
                             ->label('Pelabuhan Tujuan'),
                     ])->columns(2),

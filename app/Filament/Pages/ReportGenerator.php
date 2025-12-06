@@ -85,6 +85,17 @@ class ReportGenerator extends Page implements HasForms
                             })
                             ->helperText('Pilih jenis ternak (kosongkan untuk semua jenis ternak)')
                             ->placeholder('Pilih jenis ternak...'),
+                        
+                        Select::make('jenis_pengajuan')
+                            ->label('Jenis Pengajuan')
+                            ->options([
+                                '' => 'Semua Jenis Pengajuan',
+                                'pengeluaran' => 'Pengeluaran',
+                                'pemasukan' => 'Pemasukan',
+                                'antar_kab_kota' => 'Antar Kab/Kota',
+                            ])
+                            ->default('')
+                            ->helperText('Filter laporan berdasarkan jenis pengajuan'),
                     ])
                     ->columns(2),
             ])
@@ -98,6 +109,7 @@ class ReportGenerator extends Page implements HasForms
         $tanggalMulai = $data['tanggal_mulai'];
         $tanggalAkhir = $data['tanggal_akhir'];
         $jenisTernakIds = $data['jenis_ternak_ids'] ?? [];
+        $jenisPengajuan = $data['jenis_pengajuan'] ?? null;
 
         // Validasi tanggal
         if ($tanggalAkhir < $tanggalMulai) {
@@ -116,7 +128,7 @@ class ReportGenerator extends Page implements HasForms
                 ->body('Sedang memproses laporan, mohon tunggu...')
                 ->send();
 
-            return ReportService::generateReport($tanggalMulai, $tanggalAkhir, $jenisTernakIds);
+            return ReportService::generateReport($tanggalMulai, $tanggalAkhir, $jenisTernakIds, $jenisPengajuan);
         } catch (\Exception $e) {
             Log::error('Error generating report: ' . $e->getMessage());
             

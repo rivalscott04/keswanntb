@@ -153,13 +153,13 @@ class ViewPengajuanPemasukan extends ViewRecord
                         Infolists\Components\TextEntry::make('provinsiAsal.nama')
                             ->label('Provinsi Asal'),
                         Infolists\Components\TextEntry::make('kabKotaAsal.nama')
-                            ->label('Kota Asal'),
+                            ->label('Kabupaten/Kota Asal'),
                         Infolists\Components\TextEntry::make('pelabuhan_asal')
                             ->label('Pelabuhan Asal'),
                         Infolists\Components\TextEntry::make('provinsiTujuan.nama')
                             ->label('Provinsi Tujuan'),
                         Infolists\Components\TextEntry::make('kabKotaTujuan.nama')
-                            ->label('Kota Tujuan'),
+                            ->label('Kabupaten/Kota Tujuan'),
                         Infolists\Components\TextEntry::make('pelabuhan_tujuan')
                             ->label('Pelabuhan Tujuan'),
                     ])->columns(2),

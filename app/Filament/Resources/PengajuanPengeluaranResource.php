@@ -47,6 +47,11 @@ class PengajuanPengeluaranResource extends Resource
             $kabKotaAsalId = $get('kab_kota_asal_id');
             $jenisKelamin = $get('jenis_kelamin');
 
+            // Cek apakah jenis ternak ini memerlukan kuota
+            if (!\App\Models\PenggunaanKuota::isKuotaRequired($jenisTernakId, 'pengeluaran')) {
+                return 'Tidak ada kuota (bebas keluar)';
+            }
+
             // Daftar kab/kota di pulau Lombok
             $kabKotaLombok = [
                 'Kota Mataram',
@@ -137,7 +142,7 @@ class PengajuanPengeluaranResource extends Resource
                             ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('kab_kota_tujuan')
-                            ->label('Kota Tujuan Ternak')
+                            ->label('Kabupaten/Kota Tujuan Ternak')
                             ->required(),
 
                         Forms\Components\Select::make('pelabuhan_tujuan')
@@ -189,6 +194,7 @@ class PengajuanPengeluaranResource extends Resource
                             ->options([
                                 'jantan' => 'Jantan',
                                 'betina' => 'Betina',
+                                'gabung' => 'Gabung',
                             ])
                             ->required(fn(callable $get) => !$isBibitSapi($get))
                             ->visible(fn(callable $get) => !$isBibitSapi($get))
@@ -212,7 +218,30 @@ class PengajuanPengeluaranResource extends Resource
                             ->label('Jumlah Ternak')
                             ->numeric()
                             ->minValue(1)
+                            ->maxValue(function (callable $get) use ($cekKuotaPengeluaran) {
+                                if ($get('jenis_ternak_id')) {
+                                    $kuota = $cekKuotaPengeluaran($get);
+                                    // Jika tidak ada kuota atau string, tidak ada batasan maksimal
+                                    if (!is_numeric($kuota)) {
+                                        return null;
+                                    }
+                                    return $kuota;
+                                }
+                                return null;
+                            })
                             ->helperText(fn(callable $get) => !$isBibitSapi($get) ? 'Kuota tersedia: ' . $cekKuotaPengeluaran($get) : '')
+                            ->rules([
+                                fn (callable $get) => function (string $attribute, $value, \Closure $fail) use ($get, $cekKuotaPengeluaran) {
+                                    $jenisTernakId = $get('jenis_ternak_id');
+                                    if (\App\Models\PenggunaanKuota::isKuotaRequired($jenisTernakId, 'pengeluaran')) {
+                                        $kuota = $cekKuotaPengeluaran($get);
+                                        // Validasi hanya jika ada kuota (numeric)
+                                        if (is_numeric($kuota) && (int)$value > (int)$kuota) {
+                                            $fail("Jumlah ternak ({$value}) melebihi kuota tersedia ({$kuota}).");
+                                        }
+                                    }
+                                },
+                            ])
                             ->required(fn(callable $get) => !$isBibitSapi($get))
                             ->visible(fn(callable $get) => !$isBibitSapi($get))
                             ->reactive()
@@ -242,11 +271,14 @@ class PengajuanPengeluaranResource extends Resource
                                             return;
                                         }
                                         
-                                        // Validasi: jumlah jantan tidak boleh melebihi kuota
+                                        // Validasi: jumlah jantan tidak boleh melebihi kuota (hanya jika perlu kuota)
                                         if ($jumlahJantan > 0) {
-                                            $kuotaTersedia = $cekKuotaJantan($get);
-                                            if ($jumlahJantan > $kuotaTersedia) {
-                                                $fail("Jumlah jantan ({$jumlahJantan}) melebihi kuota tersedia ({$kuotaTersedia}).");
+                                            $jenisTernakId = $get('jenis_ternak_id');
+                                            if (\App\Models\PenggunaanKuota::isKuotaRequired($jenisTernakId, 'pengeluaran')) {
+                                                $kuotaTersedia = $cekKuotaJantan($get);
+                                                if (is_numeric($kuotaTersedia) && $jumlahJantan > $kuotaTersedia) {
+                                                    $fail("Jumlah jantan ({$jumlahJantan}) melebihi kuota tersedia ({$kuotaTersedia}).");
+                                                }
                                             }
                                         }
                                     }
@@ -283,11 +315,14 @@ class PengajuanPengeluaranResource extends Resource
                                             return;
                                         }
                                         
-                                        // Validasi: jumlah betina tidak boleh melebihi kuota
+                                        // Validasi: jumlah betina tidak boleh melebihi kuota (hanya jika perlu kuota)
                                         if ($jumlahBetina > 0) {
-                                            $kuotaTersedia = $cekKuotaBetina($get);
-                                            if ($jumlahBetina > $kuotaTersedia) {
-                                                $fail("Jumlah betina ({$jumlahBetina}) melebihi kuota tersedia ({$kuotaTersedia}).");
+                                            $jenisTernakId = $get('jenis_ternak_id');
+                                            if (\App\Models\PenggunaanKuota::isKuotaRequired($jenisTernakId, 'pengeluaran')) {
+                                                $kuotaTersedia = $cekKuotaBetina($get);
+                                                if (is_numeric($kuotaTersedia) && $jumlahBetina > $kuotaTersedia) {
+                                                    $fail("Jumlah betina ({$jumlahBetina}) melebihi kuota tersedia ({$kuotaTersedia}).");
+                                                }
                                             }
                                         }
                                     }
@@ -362,7 +397,7 @@ class PengajuanPengeluaranResource extends Resource
                 Tables\Columns\TextColumn::make('provinsiTujuan.nama')
                     ->label('Provinsi Tujuan'),
                 Tables\Columns\TextColumn::make('kab_kota_tujuan')
-                    ->label('Kota Tujuan'),
+                    ->label('Kab/Kota Tujuan'),
                 Tables\Columns\TextColumn::make('jenisTernak.nama')
                     ->label('Jenis Ternak'),
                 Tables\Columns\TextColumn::make('jumlah_ternak')

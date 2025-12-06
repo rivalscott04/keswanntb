@@ -41,6 +41,12 @@ class PengajuanResource extends Resource
             $kabKotaTujuanId = $get('kab_kota_tujuan_id');
             $jenisKelamin = $get('jenis_kelamin');
 
+            // Cek apakah jenis ternak ini memerlukan kuota untuk pengeluaran
+            $perluKuotaPengeluaran = \App\Models\PenggunaanKuota::isKuotaRequired($jenisTernakId, 'pengeluaran');
+            
+            // Cek apakah jenis ternak ini memerlukan kuota untuk pemasukan
+            $perluKuotaPemasukan = \App\Models\PenggunaanKuota::isKuotaRequired($jenisTernakId, 'pemasukan', $kabKotaTujuanId);
+
             // Daftar kab/kota di pulau Lombok
             $kabKotaLombok = [
                 'Kota Mataram',
@@ -58,17 +64,22 @@ class PengajuanResource extends Resource
             $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
 
             // Untuk pengajuan antar kab/kota, cek kuota pengeluaran dari asal
-            if ($isLombokAsal) {
-                // Kuota pengeluaran dari pulau Lombok
-                $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
-                    $tahun, $jenisTernakId, $jenisKelamin, 'pengeluaran'
-                );
-                $lokasiKuota = 'Pulau Lombok';
+            if ($perluKuotaPengeluaran) {
+                if ($isLombokAsal) {
+                    // Kuota pengeluaran dari pulau Lombok
+                    $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                        $tahun, $jenisTernakId, $jenisKelamin, 'pengeluaran'
+                    );
+                    $lokasiKuota = 'Pulau Lombok';
+                } else {
+                    // Kuota pengeluaran dari kab/kota asal
+                    $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisa(
+                        $tahun, $jenisTernakId, $kabKotaAsalId, $jenisKelamin, 'pengeluaran'
+                    );
+                    $lokasiKuota = $kabKotaAsal ? $kabKotaAsal->nama : 'Tidak Diketahui';
+                }
             } else {
-                // Kuota pengeluaran dari kab/kota asal
-                $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisa(
-                    $tahun, $jenisTernakId, $kabKotaAsalId, $jenisKelamin, 'pengeluaran'
-                );
+                $kuotaPengeluaran = 'Tidak ada kuota (bebas keluar)';
                 $lokasiKuota = $kabKotaAsal ? $kabKotaAsal->nama : 'Tidak Diketahui';
             }
 
@@ -76,17 +87,21 @@ class PengajuanResource extends Resource
             $kuotaPemasukan = 0;
             $lokasiPemasukan = 'Tidak Diketahui';
             if ($kabKotaTujuanId) {
-                // Untuk pemasukan, selalu gunakan kuota per kab/kota
-                // Kuota pemasukan untuk Lombok adalah per kab/kota (spesifik), bukan global
-                // Kuota pemasukan untuk Sumbawa juga per kab/kota
-                $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
-                    $tahun, 
-                    $jenisTernakId, 
-                    $kabKotaTujuanId, 
-                    $jenisKelamin, 
-                    'pemasukan', 
-                    $isLombokTujuan ? 'Lombok' : null
-                );
+                if ($perluKuotaPemasukan) {
+                    // Untuk pemasukan, selalu gunakan kuota per kab/kota
+                    // Kuota pemasukan untuk Lombok adalah per kab/kota (spesifik), bukan global
+                    // Kuota pemasukan untuk Sumbawa juga per kab/kota
+                    $kuotaPemasukan = \App\Models\PenggunaanKuota::getKuotaTersisa(
+                        $tahun, 
+                        $jenisTernakId, 
+                        $kabKotaTujuanId, 
+                        $jenisKelamin, 
+                        'pemasukan', 
+                        $isLombokTujuan ? 'Lombok' : null
+                    );
+                } else {
+                    $kuotaPemasukan = 'Tidak ada kuota (bebas masuk)';
+                }
                 $lokasiPemasukan = $kabKotaTujuan ? $kabKotaTujuan->nama : 'Tidak Diketahui';
             }
 
@@ -209,6 +224,7 @@ class PengajuanResource extends Resource
                             ->options([
                                 'jantan' => 'Jantan',
                                 'betina' => 'Betina',
+                                'gabung' => 'Gabung',
                             ])
                             ->required()
                             ->live(),
@@ -221,17 +237,33 @@ class PengajuanResource extends Resource
                             ->label('Jumlah Ternak')
                             ->numeric()
                             ->minValue(1)
-                            ->maxValue(
-                                fn(callable $get) => $cekKuotaTersedia($get)['kuota']
-                            )
+                            ->maxValue(function (callable $get) use ($cekKuotaTersedia) {
+                                $kuotaData = $cekKuotaTersedia($get);
+                                $kuotaPengeluaran = $kuotaData['pengeluaran'];
+                                // Jika tidak ada kuota atau string, tidak ada batasan maksimal
+                                if (!is_numeric($kuotaPengeluaran)) {
+                                    return null;
+                                }
+                                return $kuotaPengeluaran;
+                            })
                             ->helperText(function (callable $get) use ($cekKuotaTersedia) {
                                 $kuotaData = $cekKuotaTersedia($get);
-                                $text = 'Kuota tersedia: ' . $kuotaData['kuota'] . ' (Pengeluaran - ' . $kuotaData['lokasi'] . ')';
-                                if ($kuotaData['pemasukan'] > 0 || $get('kab_kota_tujuan_id')) {
+                                $text = 'Kuota tersedia: ' . $kuotaData['pengeluaran'] . ' (Pengeluaran - ' . $kuotaData['lokasi'] . ')';
+                                if ($kuotaData['pemasukan'] !== 0 && $get('kab_kota_tujuan_id')) {
                                     $text .= ' | ' . $kuotaData['pemasukan'] . ' (Pemasukan - ' . $kuotaData['lokasi_pemasukan'] . ')';
                                 }
                                 return $text;
                             })
+                            ->rules([
+                                fn (callable $get) => function (string $attribute, $value, \Closure $fail) use ($get, $cekKuotaTersedia) {
+                                    $kuotaData = $cekKuotaTersedia($get);
+                                    $kuotaPengeluaran = $kuotaData['pengeluaran'];
+                                    // Validasi hanya jika ada kuota (numeric)
+                                    if (is_numeric($kuotaPengeluaran) && (int)$value > (int)$kuotaPengeluaran) {
+                                        $fail("Jumlah ternak ({$value}) melebihi kuota tersedia ({$kuotaPengeluaran}).");
+                                    }
+                                },
+                            ])
                             ->required()
                             ->reactive()
                             ->columnSpanFull(),
