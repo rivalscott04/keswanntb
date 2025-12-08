@@ -249,9 +249,13 @@ class PengajuanResource extends Resource
                             ->helperText(function (callable $get) use ($cekKuotaTersedia) {
                                 $kuotaData = $cekKuotaTersedia($get);
                                 $text = 'Kuota tersedia: ' . $kuotaData['pengeluaran'] . ' (Pengeluaran - ' . $kuotaData['lokasi'] . ')';
-                                if ($kuotaData['pemasukan'] !== 0 && $get('kab_kota_tujuan_id')) {
+
+                                // Selalu tampilkan info kuota pemasukan ketika tujuan sudah dipilih,
+                                // termasuk saat kuota bernilai 0 agar pengguna tahu tidak ada kuota tersisa.
+                                if ($get('kab_kota_tujuan_id')) {
                                     $text .= ' | ' . $kuotaData['pemasukan'] . ' (Pemasukan - ' . $kuotaData['lokasi_pemasukan'] . ')';
                                 }
+
                                 return $text;
                             })
                             ->rules([
