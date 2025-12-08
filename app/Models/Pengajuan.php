@@ -137,8 +137,12 @@ class Pengajuan extends Model
         $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
 
         if ($this->jenis_pengajuan === 'antar_kab_kota') {
-            // Untuk pengajuan antar kab/kota, hanya cek kuota pengeluaran dari asal
+            // Untuk pengajuan antar kab/kota, berdasarkan hasil rapat supply-demand:
+            // - Kuota pengeluaran dari kab/kota di pulau Sumbawa TIDAK dikurangi
+            // - Yang dikurangi hanya kuota pemasukan ke kab/kota di pulau Lombok
+            // - Kuota pengeluaran dari kab/kota di pulau Lombok tetap dikurangi (global)
             if ($isLombokAsal) {
+                // Kuota pengeluaran dari pulau Lombok (akan dikurangi)
                 return \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
                     $this->tahun_pengajuan,
                     $this->jenis_ternak_id,
@@ -146,13 +150,9 @@ class Pengajuan extends Model
                     'pengeluaran'
                 );
             } else {
-                return \App\Models\PenggunaanKuota::getKuotaTersisa(
-                    $this->tahun_pengajuan,
-                    $this->jenis_ternak_id,
-                    $this->kab_kota_asal_id,
-                    $this->jenis_kelamin,
-                    'pengeluaran'
-                );
+                // Kuota pengeluaran dari kab/kota di Sumbawa (TIDAK akan dikurangi)
+                // Return nilai besar untuk menunjukkan tidak ada batasan
+                return PHP_INT_MAX;
             }
         } else {
             // Untuk pengajuan pemasukan/pengeluaran

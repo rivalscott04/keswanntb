@@ -63,20 +63,24 @@ class PengajuanResource extends Resource
             $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
             $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
 
-            // Untuk pengajuan antar kab/kota, cek kuota pengeluaran dari asal
+            // Untuk pengajuan antar kab/kota, berdasarkan hasil rapat supply-demand:
+            // - Kuota pengeluaran dari kab/kota di pulau Sumbawa TIDAK dikurangi
+            // - Yang dikurangi hanya kuota pemasukan ke kab/kota di pulau Lombok
+            // - Kuota pengeluaran dari kab/kota di pulau Lombok tetap dikurangi (global)
             if ($perluKuotaPengeluaran) {
                 if ($isLombokAsal) {
-                    // Kuota pengeluaran dari pulau Lombok
+                    // Kuota pengeluaran dari pulau Lombok (akan dikurangi)
                     $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
                         $tahun, $jenisTernakId, $jenisKelamin, 'pengeluaran'
                     );
                     $lokasiKuota = 'Pulau Lombok';
                 } else {
-                    // Kuota pengeluaran dari kab/kota asal
+                    // Kuota pengeluaran dari kab/kota di Sumbawa (TIDAK akan dikurangi)
+                    // Tetap tampilkan untuk informasi, tapi tidak akan divalidasi
                     $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisa(
                         $tahun, $jenisTernakId, $kabKotaAsalId, $jenisKelamin, 'pengeluaran'
                     );
-                    $lokasiKuota = $kabKotaAsal ? $kabKotaAsal->nama : 'Tidak Diketahui';
+                    $lokasiKuota = ($kabKotaAsal ? $kabKotaAsal->nama : 'Tidak Diketahui') . ' (tidak dikurangi)';
                 }
             } else {
                 $kuotaPengeluaran = 'Tidak ada kuota (bebas keluar)';
@@ -240,6 +244,25 @@ class PengajuanResource extends Resource
                             ->maxValue(function (callable $get) use ($cekKuotaTersedia) {
                                 $kuotaData = $cekKuotaTersedia($get);
                                 $kuotaPengeluaran = $kuotaData['pengeluaran'];
+                                
+                                // Cek apakah asal di Lombok atau Sumbawa
+                                $kabKotaAsalId = $get('kab_kota_asal_id');
+                                $kabKotaAsal = $kabKotaAsalId ? \App\Models\KabKota::find($kabKotaAsalId) : null;
+                                $kabKotaLombok = [
+                                    'Kota Mataram',
+                                    'Kab. Lombok Barat', 
+                                    'Kab. Lombok Tengah',
+                                    'Kab. Lombok Timur',
+                                    'Kab. Lombok Utara'
+                                ];
+                                $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
+                                
+                                // Jika asal di Sumbawa, tidak ada batasan maksimal untuk kuota pengeluaran
+                                // karena kuota pengeluaran Sumbawa tidak akan dikurangi
+                                if (!$isLombokAsal) {
+                                    return null;
+                                }
+                                
                                 // Jika tidak ada kuota atau string, tidak ada batasan maksimal
                                 if (!is_numeric($kuotaPengeluaran)) {
                                     return null;
@@ -262,7 +285,26 @@ class PengajuanResource extends Resource
                                 fn (callable $get) => function (string $attribute, $value, \Closure $fail) use ($get, $cekKuotaTersedia) {
                                     $kuotaData = $cekKuotaTersedia($get);
                                     $kuotaPengeluaran = $kuotaData['pengeluaran'];
-                                    // Validasi hanya jika ada kuota (numeric)
+                                    
+                                    // Cek apakah asal di Lombok atau Sumbawa
+                                    $kabKotaAsalId = $get('kab_kota_asal_id');
+                                    $kabKotaAsal = $kabKotaAsalId ? \App\Models\KabKota::find($kabKotaAsalId) : null;
+                                    $kabKotaLombok = [
+                                        'Kota Mataram',
+                                        'Kab. Lombok Barat', 
+                                        'Kab. Lombok Tengah',
+                                        'Kab. Lombok Timur',
+                                        'Kab. Lombok Utara'
+                                    ];
+                                    $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
+                                    
+                                    // Jika asal di Sumbawa, tidak perlu validasi kuota pengeluaran
+                                    // karena kuota pengeluaran Sumbawa tidak akan dikurangi
+                                    if (!$isLombokAsal) {
+                                        return;
+                                    }
+                                    
+                                    // Validasi hanya jika ada kuota (numeric) dan asal di Lombok
                                     if (is_numeric($kuotaPengeluaran) && (int)$value > (int)$kuotaPengeluaran) {
                                         $fail("Jumlah ternak ({$value}) melebihi kuota tersedia ({$kuotaPengeluaran}).");
                                     }
