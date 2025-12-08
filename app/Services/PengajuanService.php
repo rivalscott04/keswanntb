@@ -56,11 +56,35 @@ class PengajuanService
                 // Untuk pengajuan pengeluaran, hanya catat kuota pengeluaran dari asal
                 self::catatPenggunaanKuota($record, 'pengeluaran');
             } elseif ($record->jenis_pengajuan === 'antar_kab_kota') {
-                // Untuk pengajuan antar kab/kota, catat kedua kuota:
-                // 1. Kuota pengeluaran dari kab/kota asal
-                // 2. Kuota pemasukan ke kab/kota tujuan
-                self::catatPenggunaanKuota($record, 'pengeluaran');
-                self::catatPenggunaanKuota($record, 'pemasukan');
+                // Untuk pengajuan antar kab/kota, berdasarkan hasil rapat supply-demand:
+                // - Kuota pengeluaran dari kab/kota di pulau Sumbawa TIDAK dikurangi
+                // - Yang dikurangi hanya kuota pemasukan ke kab/kota di pulau Lombok
+                // - Kuota pengeluaran dari kab/kota di pulau Lombok tetap dikurangi (global)
+                
+                // Daftar kab/kota di pulau Lombok
+                $kabKotaLombok = [
+                    'Kota Mataram',
+                    'Kab. Lombok Barat', 
+                    'Kab. Lombok Tengah',
+                    'Kab. Lombok Timur',
+                    'Kab. Lombok Utara'
+                ];
+                
+                $kabKotaAsal = $record->kabKotaAsal;
+                $kabKotaTujuan = $record->kabKotaTujuan;
+                
+                $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
+                $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
+                
+                // 1. Catat kuota pengeluaran hanya jika asal di Lombok (bukan Sumbawa)
+                if ($isLombokAsal) {
+                    self::catatPenggunaanKuota($record, 'pengeluaran');
+                }
+                
+                // 2. Catat kuota pemasukan hanya jika tujuan di Lombok
+                if ($isLombokTujuan) {
+                    self::catatPenggunaanKuota($record, 'pemasukan');
+                }
             }
             
             $record->update([
