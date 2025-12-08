@@ -131,6 +131,7 @@ class PenggunaanKuota extends Model
         }
 
         $namaJenisTernak = $jenisTernak->nama;
+        $namaLower = strtolower($namaJenisTernak);
 
         // Untuk pengeluaran
         if ($jenisPengajuan === 'pengeluaran') {
@@ -151,8 +152,8 @@ class PenggunaanKuota extends Model
 
         // Untuk pemasukan
         if ($jenisPengajuan === 'pemasukan') {
-            // Pemasukan sapi pedaging ke pulau Lombok
-            if ($namaJenisTernak === 'Sapi' && $kabKotaTujuanId) {
+            // Pemasukan sapi pedaging ke pulau Lombok (cocokkan nama yang mengandung "sapi" kecuali bibit)
+            if (str_contains($namaLower, 'sapi') && !str_contains($namaLower, 'bibit') && $kabKotaTujuanId) {
                 $kabKotaTujuan = KabKota::find($kabKotaTujuanId);
                 if ($kabKotaTujuan) {
                     $kabKotaLombok = [
@@ -168,7 +169,7 @@ class PenggunaanKuota extends Model
                 }
             }
             // Pemasukan sapi eksotik
-            if ($namaJenisTernak === 'Sapi Eksotik') {
+            if (str_contains($namaLower, 'sapi eksotik')) {
                 return true;
             }
             return false;
