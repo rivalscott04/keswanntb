@@ -135,16 +135,16 @@ class PenggunaanKuota extends Model
 
         // Untuk pengeluaran
         if ($jenisPengajuan === 'pengeluaran') {
-            // Pengeluaran sapi pedaging
-            if ($namaJenisTernak === 'Sapi') {
+            // Pengeluaran sapi pedaging (nama mengandung "sapi" tapi bukan bibit)
+            if (str_contains($namaLower, 'sapi') && !str_contains($namaLower, 'bibit')) {
                 return true;
             }
             // Pengeluaran kerbau pedaging
-            if ($namaJenisTernak === 'Kerbau') {
+            if (str_contains($namaLower, 'kerbau')) {
                 return true;
             }
             // Pengeluaran sapi bibit
-            if ($namaJenisTernak === 'Bibit Sapi') {
+            if (str_contains($namaLower, 'bibit sapi')) {
                 return true;
             }
             return false;
