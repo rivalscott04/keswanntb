@@ -50,8 +50,40 @@ class PengajuanService
         // Kuota akan berkurang ketika Disnak Provinsi menyetujui pengajuan
         if ($record->tahapVerifikasi->urutan === 4) {
             if ($record->jenis_pengajuan === 'pemasukan') {
-                // Untuk pengajuan pemasukan, hanya catat kuota pemasukan ke tujuan
-                self::catatPenggunaanKuota($record, 'pemasukan');
+                // Untuk pengajuan pemasukan, berdasarkan hasil rapat supply-demand:
+                // - Pemasukan sapi pedaging dari luar daerah ke kab/kota di pulau Lombok TIDAK mengurangi kuota pemasukan Lombok
+                // - Kuota pemasukan kab/kota pulau Lombok hanya berlaku untuk pemasukan sapi pedaging dari kab/kota pulau Sumbawa (antar_kab_kota)
+                // - Pemasukan dari luar daerah ke Lombok: TIDAK catat kuota
+                // - Pemasukan sapi eksotik tetap catat kuota (karena ada kuota khusus)
+                
+                // Daftar kab/kota di pulau Lombok
+                $kabKotaLombok = [
+                    'Kota Mataram',
+                    'Kab. Lombok Barat', 
+                    'Kab. Lombok Tengah',
+                    'Kab. Lombok Timur',
+                    'Kab. Lombok Utara'
+                ];
+                
+                $kabKotaTujuan = $record->kabKotaTujuan;
+                $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
+                
+                // Cek apakah ini sapi pedaging (bukan bibit, bukan eksotik)
+                $jenisTernak = $record->jenisTernak;
+                $namaJenisTernak = $jenisTernak ? strtolower($jenisTernak->nama) : '';
+                $isSapiPedaging = str_contains($namaJenisTernak, 'sapi') && 
+                                  !str_contains($namaJenisTernak, 'bibit') && 
+                                  !str_contains($namaJenisTernak, 'eksotik');
+                
+                // Jika pemasukan sapi pedaging ke Lombok dari luar daerah, TIDAK catat kuota
+                // (karena pemasukan selalu dari luar NTB, bukan dari Sumbawa)
+                if ($isLombokTujuan && $isSapiPedaging) {
+                    // Pemasukan sapi pedaging dari luar daerah ke Lombok tidak mengurangi kuota
+                    // Skip pencatatan kuota
+                } else {
+                    // Untuk sapi eksotik atau tujuan selain Lombok, tetap catat kuota
+                    self::catatPenggunaanKuota($record, 'pemasukan');
+                }
             } elseif ($record->jenis_pengajuan === 'pengeluaran') {
                 // Untuk pengajuan pengeluaran, hanya catat kuota pengeluaran dari asal
                 self::catatPenggunaanKuota($record, 'pengeluaran');
@@ -219,9 +251,10 @@ class PengajuanService
             return;
         }
 
-        // Cek apakah jenis ternak adalah Bibit Sapi
+        // Cek apakah jenis ternak adalah Bibit Sapi atau Sapi Eksotik
         $jenisTernak = $pengajuan->jenisTernak;
         $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
+        $isSapiEksotik = $jenisTernak && str_contains(strtolower($jenisTernak->nama), 'eksotik');
 
         // Untuk Bibit Sapi, catat kuota jantan dan betina terpisah jika ada
         if ($isBibitSapi) {
@@ -251,6 +284,33 @@ class PengajuanService
         
         if ($sudahDicatat) {
             // Jika sudah pernah dicatat, skip untuk mencegah duplikasi
+            return;
+        }
+
+        // Untuk sapi eksotik, gunakan kuota global NTB (tanpa pembagian per kab/kota)
+        if ($isSapiEksotik && $jenisPenggunaan === 'pemasukan') {
+            // Ambil kuota global NTB untuk sapi eksotik (kab_kota_id = null, pulau = null)
+            $kuota = Kuota::where('tahun', $pengajuan->tahun_pengajuan)
+                ->where('jenis_ternak_id', $pengajuan->jenis_ternak_id)
+                ->where('jenis_kelamin', $pengajuan->jenis_kelamin)
+                ->where('jenis_kuota', $jenisPenggunaan)
+                ->whereNull('kab_kota_id')
+                ->whereNull('pulau')
+                ->first();
+
+            if ($kuota) {
+                PenggunaanKuota::create([
+                    'pengajuan_id' => $pengajuan->id,
+                    'kuota_id' => $kuota->id,
+                    'jumlah_digunakan' => $pengajuan->jumlah_ternak,
+                    'jenis_penggunaan' => $jenisPenggunaan,
+                    'kab_kota_id' => null,  // Global NTB
+                    'tahun' => $pengajuan->tahun_pengajuan,
+                    'jenis_ternak_id' => $pengajuan->jenis_ternak_id,
+                    'jenis_kelamin' => $pengajuan->jenis_kelamin,
+                    'pulau' => null,  // Global NTB
+                ]);
+            }
             return;
         }
 

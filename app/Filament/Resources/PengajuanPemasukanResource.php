@@ -46,6 +46,20 @@ class PengajuanPemasukanResource extends Resource
                 return 'Tidak ada kuota (bebas masuk)';
             }
 
+            // Cek apakah ini sapi eksotik (menggunakan kuota global NTB, tidak per kab/kota)
+            $jenisTernak = \App\Models\JenisTernak::find($jenisTernakId);
+            $isSapiEksotik = $jenisTernak && str_contains(strtolower($jenisTernak->nama), 'eksotik');
+
+            // Untuk sapi eksotik, gunakan kuota global NTB (total 60.000 ekor untuk seluruh NTB)
+            if ($isSapiEksotik) {
+                return \App\Models\PenggunaanKuota::getKuotaTersisaGlobalNTB(
+                    $tahun, 
+                    $jenisTernakId, 
+                    $jenisKelamin, 
+                    'pemasukan'
+                );
+            }
+
             // Daftar kab/kota di pulau Lombok
             $kabKotaLombok = [
                 'Kota Mataram',

@@ -105,6 +105,43 @@ class PenggunaanKuota extends Model
     }
 
     /**
+     * Hitung kuota tersisa untuk seluruh NTB (global, tanpa pembagian per kab/kota)
+     * Digunakan untuk sapi eksotik/Bali yang memiliki kuota total 60.000 ekor untuk seluruh NTB
+     */
+    public static function getKuotaTersisaGlobalNTB($tahun, $jenisTernakId, $jenisKelamin, $jenisKuota)
+    {
+        // Ambil kuota total untuk seluruh NTB (kab_kota_id = null, pulau = null)
+        $kuotaTotal = Kuota::where('tahun', $tahun)
+            ->where('jenis_ternak_id', $jenisTernakId)
+            ->where('kab_kota_id', null)  // Global untuk seluruh NTB
+            ->where('jenis_kelamin', $jenisKelamin)
+            ->where('jenis_kuota', $jenisKuota)
+            ->whereNull('pulau')  // Tidak ada pulau spesifik, berarti untuk seluruh NTB
+            ->sum('kuota');
+
+        // Hitung kuota yang sudah digunakan untuk seluruh NTB
+        // Untuk sapi eksotik, semua penggunaan dihitung (karena kuota global, tidak peduli kab/kota atau pulau)
+        // Cari penggunaan kuota yang terkait dengan kuota global NTB (kuota_id yang memiliki kab_kota_id = null dan pulau = null)
+        $kuotaGlobalIds = Kuota::where('tahun', $tahun)
+            ->where('jenis_ternak_id', $jenisTernakId)
+            ->where('kab_kota_id', null)
+            ->where('jenis_kelamin', $jenisKelamin)
+            ->where('jenis_kuota', $jenisKuota)
+            ->whereNull('pulau')
+            ->pluck('id')
+            ->toArray();
+
+        $kuotaDigunakan = self::where('tahun', $tahun)
+            ->where('jenis_ternak_id', $jenisTernakId)
+            ->where('jenis_kelamin', $jenisKelamin)
+            ->where('jenis_penggunaan', $jenisKuota)
+            ->whereIn('kuota_id', $kuotaGlobalIds)
+            ->sum('jumlah_digunakan');
+
+        return max(0, $kuotaTotal - $kuotaDigunakan);
+    }
+
+    /**
      * Cek apakah kombinasi jenis ternak, jenis pengajuan, dan lokasi memerlukan kuota
      * 
      * Yang memerlukan kuota:

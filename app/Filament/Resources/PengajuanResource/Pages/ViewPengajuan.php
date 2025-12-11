@@ -166,11 +166,39 @@ class ViewPengajuan extends ViewRecord
                         TextEntry::make('kuota_tersedia')
                             ->label('Kuota Tersedia')
                             ->badge()
-                            ->color(fn($record) => $record->is_kuota_penuh ? 'danger' : 'success')
-                            ->formatStateUsing(function($record) {
-                                if ($record->is_kuota_penuh) {
-                                    return 'Kuota Penuh';
+                            ->color(function($record) {
+                                $perluKuota = false;
+                                if ($record->jenis_pengajuan === 'pengeluaran') {
+                                    $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pengeluaran');
+                                } elseif ($record->jenis_pengajuan === 'pemasukan') {
+                                    $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pemasukan', $record->kab_kota_tujuan_id);
+                                } elseif ($record->jenis_pengajuan === 'antar_kab_kota') {
+                                    $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pengeluaran');
                                 }
+                                
+                                if (!$perluKuota) {
+                                    return 'gray';
+                                }
+                                return $record->is_kuota_penuh ? 'danger' : 'success';
+                            })
+                            ->formatStateUsing(function($record) {
+                                $perluKuota = false;
+                                if ($record->jenis_pengajuan === 'pengeluaran') {
+                                    $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pengeluaran');
+                                } elseif ($record->jenis_pengajuan === 'pemasukan') {
+                                    $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pemasukan', $record->kab_kota_tujuan_id);
+                                } elseif ($record->jenis_pengajuan === 'antar_kab_kota') {
+                                    $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pengeluaran');
+                                }
+                                
+                                if (!$perluKuota) {
+                                    return 'Tidak ada kuota';
+                                }
+                                
+                                if ($record->is_kuota_penuh) {
+                                    return 'Tidak ada kuota';
+                                }
+                                
                                 // Untuk pengajuan antar kab/kota, tampilkan kuota pengeluaran dari asal
                                 $kabKotaAsal = $record->kabKotaAsal;
                                 $kabKotaTujuan = $record->kabKotaTujuan;
@@ -185,6 +213,10 @@ class ViewPengajuan extends ViewRecord
                                 ];
                                 
                                 $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
+                                
+                                if ($record->kuota_tersedia <= 0) {
+                                    return 'Tidak ada kuota';
+                                }
                                 
                                 if ($isLombokAsal) {
                                     return $record->kuota_tersedia . ' ekor (Pengeluaran - Pulau Lombok)';

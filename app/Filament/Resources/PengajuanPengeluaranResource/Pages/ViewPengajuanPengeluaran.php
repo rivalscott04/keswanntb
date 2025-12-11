@@ -124,25 +124,48 @@ class ViewPengajuanPengeluaran extends ViewRecord
                             ->label('Sisa Kuota Pengeluaran')
                             ->badge()
                             ->color(function($record) {
+                                $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pengeluaran');
+                                if (!$perluKuota) {
+                                    return 'gray';
+                                }
                                 $kuotaSisa = $this->getKuotaPengeluaranAsal($record);
                                 return $kuotaSisa <= 0 ? 'danger' : ($kuotaSisa < $record->jumlah_ternak ? 'warning' : 'success');
                             })
                             ->formatStateUsing(function($record) {
-                                return $this->getKuotaPengeluaranAsal($record) . ' ekor';
+                                $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pengeluaran');
+                                if (!$perluKuota) {
+                                    return 'Tidak ada kuota';
+                                }
+                                $kuotaSisa = $this->getKuotaPengeluaranAsal($record);
+                                if ($kuotaSisa <= 0) {
+                                    return 'Tidak ada kuota';
+                                }
+                                return $kuotaSisa . ' ekor';
                             }),
                         Infolists\Components\TextEntry::make('id')
                             ->label('Status Kuota')
                             ->badge()
                             ->color(function($record) {
+                                $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pengeluaran');
+                                if (!$perluKuota) {
+                                    return 'gray';
+                                }
                                 $kuotaSisa = $this->getKuotaPengeluaranAsal($record);
                                 $jumlahDiajukan = $record->jumlah_ternak;
                                 return $kuotaSisa < $jumlahDiajukan ? 'danger' : 'success';
                             })
                             ->formatStateUsing(function($record) {
+                                $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pengeluaran');
+                                if (!$perluKuota) {
+                                    return 'Tidak ada kuota';
+                                }
                                 $kuotaSisa = $this->getKuotaPengeluaranAsal($record);
                                 $jumlahDiajukan = $record->jumlah_ternak;
+                                if ($kuotaSisa <= 0) {
+                                    return 'Tidak ada kuota';
+                                }
                                 if ($kuotaSisa < $jumlahDiajukan) {
-                                    return 'Kuota Tidak Cukup';
+                                    return 'Tidak ada kuota';
                                 }
                                 return 'Kuota Tersedia';
                             }),
