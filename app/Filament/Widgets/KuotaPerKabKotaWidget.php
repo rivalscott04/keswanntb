@@ -30,29 +30,38 @@ class KuotaPerKabKotaWidget extends BaseWidget
                 $jenisKelaminFilter = $this->getTableFilterState('jenis_kelamin');
                 
                 // Untuk SelectFilter, nilai biasanya langsung di array atau di ['value']
-                $tahun = $tahunFilter && is_array($tahunFilter) && isset($tahunFilter['value']) ? $tahunFilter['value'] : ($tahunFilter && is_numeric($tahunFilter) ? $tahunFilter : now()->year);
-                $jenisTernakId = $jenisTernakFilter && is_array($jenisTernakFilter) && isset($jenisTernakFilter['value']) ? $jenisTernakFilter['value'] : ($jenisTernakFilter && is_numeric($jenisTernakFilter) ? $jenisTernakFilter : null);
-                $jenisKelamin = $jenisKelaminFilter && is_array($jenisKelaminFilter) && isset($jenisKelaminFilter['value']) ? $jenisKelaminFilter['value'] : ($jenisKelaminFilter && is_string($jenisKelaminFilter) ? $jenisKelaminFilter : null);
+                $tahun = $tahunFilter && is_array($tahunFilter) && isset($tahunFilter['value'])
+                    ? $tahunFilter['value']
+                    : ($tahunFilter && is_numeric($tahunFilter) ? $tahunFilter : now()->year);
+                $jenisTernakId = $jenisTernakFilter && is_array($jenisTernakFilter) && isset($jenisTernakFilter['value'])
+                    ? $jenisTernakFilter['value']
+                    : ($jenisTernakFilter && is_numeric($jenisTernakFilter) ? $jenisTernakFilter : null);
+                $jenisKelamin = $jenisKelaminFilter && is_array($jenisKelaminFilter) && isset($jenisKelaminFilter['value'])
+                    ? $jenisKelaminFilter['value']
+                    : ($jenisKelaminFilter && is_string($jenisKelaminFilter) ? $jenisKelaminFilter : null);
 
                 // Ambil semua kab/kota yang memiliki kuota untuk tahun tertentu
                 // Termasuk kuota per kab/kota (kab_kota_id tidak null) dan kuota global Lombok (kab_kota_id null, pulau Lombok)
-                $kuotaQuery = Kuota::where('tahun', $tahun);
-                
+                // Gunakan base query lalu clone agar kondisi where tidak saling tercampur
+                $baseKuotaQuery = Kuota::where('tahun', $tahun);
+
                 if ($jenisTernakId) {
-                    $kuotaQuery->where('jenis_ternak_id', $jenisTernakId);
+                    $baseKuotaQuery->where('jenis_ternak_id', $jenisTernakId);
                 }
                 if ($jenisKelamin) {
-                    $kuotaQuery->where('jenis_kelamin', $jenisKelamin);
+                    $baseKuotaQuery->where('jenis_kelamin', $jenisKelamin);
                 }
-                
+
                 // Ambil kab/kota yang memiliki kuota per kab/kota
-                $kabKotaIds = $kuotaQuery->whereNotNull('kab_kota_id')
+                $kabKotaIds = (clone $baseKuotaQuery)
+                    ->whereNotNull('kab_kota_id')
                     ->distinct()
                     ->pluck('kab_kota_id')
                     ->toArray();
-                
+
                 // Cek apakah ada kuota global Lombok (untuk pengeluaran)
-                $hasLombokGlobalQuota = $kuotaQuery->whereNull('kab_kota_id')
+                $hasLombokGlobalQuota = (clone $baseKuotaQuery)
+                    ->whereNull('kab_kota_id')
                     ->where('pulau', 'Lombok')
                     ->where('jenis_kuota', 'pengeluaran')
                     ->exists();

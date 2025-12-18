@@ -89,7 +89,9 @@ class PengajuanPemasukanResource extends Resource
             ->schema([
                 Forms\Components\Select::make('tahun_pengajuan')
                     ->label('Tahun Pengajuan')
-                    ->options(collect(range(date('Y'), date('Y') - 4))->mapWithKeys(fn($y) => [$y => $y])->toArray())
+                    // Tambahkan pilihan tahun sampai beberapa tahun ke depan (mis. 5 tahun),
+                    // agar pengusaha bisa memilih tahun 2026 ke atas.
+                    ->options(collect(range(date('Y') + 5, date('Y') - 4))->mapWithKeys(fn($y) => [$y => $y])->toArray())
                     ->default(date('Y'))
                     ->required()
                     ->live()
@@ -153,16 +155,16 @@ class PengajuanPemasukanResource extends Resource
                             ->columnSpanFull(),
                     ])->columns(),
 
-                Forms\Components\Section::make('Informasi Ternak')
+                Forms\Components\Section::make('Informasi Komoditas')
                     ->schema([
                         Forms\Components\Select::make('kategori_ternak_id')
-                            ->label('Kategori Ternak')
+                            ->label('Kategori Komoditas')
                             ->relationship('kategoriTernak', 'nama')
                             ->required()
                             ->live()
                             ->afterStateUpdated(fn(callable $set) => $set('jenis_ternak_id', null)),
                         Forms\Components\Select::make('jenis_ternak_id')
-                            ->label('Jenis Ternak')
+                            ->label('Jenis Komoditas')
                             ->options(fn(callable $get) => \App\Models\JenisTernak::where('kategori_ternak_id', $get('kategori_ternak_id'))->pluck('nama', 'id'))
                             ->searchable()
                             ->preload()
@@ -178,10 +180,10 @@ class PengajuanPemasukanResource extends Resource
                             ->required()
                             ->live(),
                         Forms\Components\TextInput::make('ras_ternak')
-                            ->label('Ras Ternak')
+                            ->label('Ras/Strain/Nama Produk')
                             ->required(),
                         Forms\Components\TextInput::make('jumlah_ternak')
-                            ->label('Jumlah Ternak')
+                            ->label('Jumlah Komoditas')
                             ->numeric()
                             ->minValue(1)
                             ->maxValue(function (callable $get) use ($cekKuotaPemasukan) {
@@ -204,7 +206,19 @@ class PengajuanPemasukanResource extends Resource
                             ])
                             ->required()
                             ->reactive()
-                            ->columnSpanFull(),
+                            ->columnSpan(1),
+
+                        Forms\Components\Select::make('satuan')
+                            ->label('Satuan')
+                            ->options([
+                                'ekor' => 'Ekor',
+                                'butir' => 'Butir',
+                                'kg' => 'Kg',
+                                'liter' => 'Liter',
+                            ])
+                            ->required()
+                            ->default('ekor')
+                            ->columnSpan(1),
                     ])->columns(),
 
                 Forms\Components\Section::make('Dokumen')

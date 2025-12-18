@@ -62,6 +62,10 @@ class DokumenPengajuanResource extends Resource
                     ->required()
                     ->maxLength(255),
                 
+                Forms\Components\TextInput::make('nomor_dokumen')
+                    ->label('Nomor Dokumen')
+                    ->maxLength(255),
+                
                 Forms\Components\Textarea::make('keterangan')
                     ->label('Keterangan')
                     ->columnSpanFull(),
@@ -152,12 +156,16 @@ class DokumenPengajuanResource extends Resource
                     ->icon('heroicon-o-arrow-down-tray')
                     ->url(fn ($record) => $record->url_download)
                     ->openUrlInNewTab(),
-                
-                Tables\Actions\EditAction::make(),
+                // Hanya uploader yang boleh mengedit dokumen
+                Tables\Actions\EditAction::make()
+                    ->visible(fn ($record) => auth()->id() === $record->user_id),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Bulk delete hanya diizinkan untuk dokumen yang dipilih,
+                    // dan Filament akan mengecek policy per-record.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => auth()->check()),
                 ]),
             ]);
     }

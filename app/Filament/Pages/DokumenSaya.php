@@ -19,23 +19,52 @@ class DokumenSaya extends Page implements HasTable
     use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-arrow-down';
-    protected static ?string $navigationLabel = 'Dokumen Saya';
+    protected static ?string $navigationLabel = 'Daftar Dokumen';
     protected static ?string $navigationGroup = 'Pengajuan';
     protected static ?int $navigationSort = 10;
     protected static string $view = 'filament.pages.dokumen-saya';
 
-    protected static ?string $title = 'Dokumen Saya';
+    protected static ?string $title = 'Daftar Dokumen';
 
     public function table(Table $table): Table
     {
+        $user = auth()->user();
+
+        // Basis query: hanya dokumen aktif
+        $query = DokumenPengajuan::query()->aktif();
+
+        // Terapkan pembatasan keterkaitan pengajuan seperti di ListDokumenPengajuans,
+        // namun di sini kita hanya ingin dokumen yang DIUPLOAD OLEH AKUN LAIN
+        // (user_id != auth()->id()).
+
+        // Pengguna (pengusaha): dokumen dari pengajuan miliknya, tapi diupload akun lain
+        if ($user->wewenang->nama === 'Pengguna') {
+            $query->whereHas('pengajuan', function (Builder $q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
+        // Disnak Kab/Kota: dokumen pengajuan yang terkait kab/kota asal/tujuan miliknya
+        elseif ($user->wewenang->nama === 'Disnak Kab/Kota') {
+            $query->whereHas('pengajuan', function (Builder $q) use ($user) {
+                $q->where('kab_kota_asal_id', $user->kab_kota_id)
+                    ->orWhere('kab_kota_tujuan_id', $user->kab_kota_id);
+            });
+        }
+        // DPMPTSP: dokumen dari pengajuan yang sudah disetujui / selesai
+        elseif ($user->wewenang->nama === 'DPMPTSP') {
+            $query->whereHas('pengajuan', function (Builder $q) {
+                $q->whereIn('status', ['disetujui', 'selesai']);
+            });
+        }
+        // Admin & Disnak Provinsi: bisa melihat semua dokumen yang relevan,
+        // di halaman ini fokus hanya pada dokumen yang diupload akun lain,
+        // jadi tidak perlu filter tambahan pengajuan.
+
+        // Hanya dokumen yang diupload OLEH AKUN LAIN
+        $query->where('user_id', '!=', $user->id);
+
         return $table
-            ->query(
-                DokumenPengajuan::query()
-                    ->whereHas('pengajuan', function (Builder $query) {
-                        $query->where('user_id', auth()->id());
-                    })
-                    ->aktif()
-            )
+            ->query($query)
             ->columns([
                 TextColumn::make('pengajuan.nomor_surat_permohonan')
                     ->label('Nomor Surat')
@@ -147,6 +176,8 @@ class DokumenSaya extends Page implements HasTable
     public static function shouldRegisterNavigation(): bool
     {
         $user = auth()->user();
-        return $user && $user->wewenang->nama === 'Pengguna' && $user->provinsi_verified_at;
+        // Menu "Daftar Dokumen" tersedia untuk semua user yang sudah
+        // diverifikasi provinsi, bukan hanya Pengguna.
+        return (bool) ($user && $user->provinsi_verified_at);
     }
 }
