@@ -6,6 +6,7 @@ use App\Models\Pengajuan;
 use App\Models\JenisTernak;
 use App\Models\KabKota;
 use App\Models\Provinsi;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -21,6 +22,26 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class ReportService
 {
+    /**
+     * Safely format a date field that might be a string or Carbon instance
+     */
+    public static function formatDate($date, $format = 'd/m/Y')
+    {
+        if (!$date) {
+            return '-';
+        }
+        
+        if ($date instanceof Carbon) {
+            return $date->format($format);
+        }
+        
+        try {
+            return Carbon::parse($date)->format($format);
+        } catch (\Exception $e) {
+            return '-';
+        }
+    }
+
     public static function generateReport($tanggalMulai, $tanggalAkhir, $jenisTernakIds = [], $jenisPengajuan = null)
     {
         $query = Pengajuan::with([
@@ -259,9 +280,9 @@ class DetailTransactionSheet implements FromCollection, WithHeadings, WithTitle,
         return $this->data->map(function ($pengajuan, $index) {
             return [
                 'No' => $index + 1,
-                'Tanggal Pengajuan' => $pengajuan->tanggal_surat_permohonan ? $pengajuan->tanggal_surat_permohonan->format('d/m/Y') : '-',
+                'Tanggal Pengajuan' => ReportService::formatDate($pengajuan->tanggal_surat_permohonan),
                 'Nomor Surat' => $pengajuan->nomor_surat_permohonan ?? '-',
-                'Tanggal Surat' => $pengajuan->tanggal_surat_permohonan ? $pengajuan->tanggal_surat_permohonan->format('d/m/Y') : '-',
+                'Tanggal Surat' => ReportService::formatDate($pengajuan->tanggal_surat_permohonan),
                 'Perusahaan' => $pengajuan->user?->nama_perusahaan ?? $pengajuan->user?->name ?? '-',
                 'Nama Pemohon' => $pengajuan->user?->name ?? '-',
                 'Jenis Pengajuan' => match($pengajuan->jenis_pengajuan) {
@@ -391,7 +412,7 @@ class AntarKabKotaSheet implements FromCollection, WithHeadings, WithTitle, With
         foreach ($this->data as $pengajuan) {
             $result[] = [
                 'No' => $index++,
-                'Tanggal' => $pengajuan->tanggal_surat_permohonan ? $pengajuan->tanggal_surat_permohonan->format('d/m/Y') : '-',
+                'Tanggal' => ReportService::formatDate($pengajuan->tanggal_surat_permohonan),
                 'Kab/Kota Asal' => $pengajuan->kabKotaAsal?->nama ?? $pengajuan->kab_kota_asal ?? '-',
                 'Kab/Kota Tujuan' => $pengajuan->kabKotaTujuan?->nama ?? $pengajuan->kab_kota_tujuan ?? '-',
                 'Jenis Ternak' => $pengajuan->jenisTernak?->nama ?? '-',
@@ -511,7 +532,7 @@ class PengeluaranSheet implements FromCollection, WithHeadings, WithTitle, WithC
         foreach ($this->data as $pengajuan) {
             $result[] = [
                 'No' => $index++,
-                'Tanggal' => $pengajuan->tanggal_surat_permohonan ? $pengajuan->tanggal_surat_permohonan->format('d/m/Y') : '-',
+                'Tanggal' => ReportService::formatDate($pengajuan->tanggal_surat_permohonan),
                 'Kab/Kota Asal' => $pengajuan->kabKotaAsal?->nama ?? $pengajuan->kab_kota_asal ?? '-',
                 'Provinsi Tujuan' => $pengajuan->provinsiTujuan?->nama ?? '-',
                 'Kab/Kota Tujuan' => $pengajuan->kab_kota_tujuan ?? '-',
@@ -619,7 +640,7 @@ class PemasukanSheet implements FromCollection, WithHeadings, WithTitle, WithCol
         foreach ($this->data as $pengajuan) {
             $result[] = [
                 'No' => $index++,
-                'Tanggal' => $pengajuan->tanggal_surat_permohonan ? $pengajuan->tanggal_surat_permohonan->format('d/m/Y') : '-',
+                'Tanggal' => ReportService::formatDate($pengajuan->tanggal_surat_permohonan),
                 'Provinsi Asal' => $pengajuan->provinsiAsal?->nama ?? '-',
                 'Kab/Kota Asal' => $pengajuan->kab_kota_asal ?? '-',
                 'Kab/Kota Tujuan' => $pengajuan->kabKotaTujuan?->nama ?? $pengajuan->kab_kota_tujuan ?? '-',
