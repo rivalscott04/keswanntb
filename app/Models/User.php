@@ -3,13 +3,15 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Lab404\Impersonate\Models\Impersonate;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, Impersonate;
@@ -76,5 +78,32 @@ class User extends Authenticatable
     public function provinsiVerifiedBy()
     {
         return $this->belongsTo(User::class, 'provinsi_verified_by');
+    }
+
+    /**
+     * Determine if the user can access the Filament admin panel.
+     * 
+     * This method is required by FilamentUser contract to prevent
+     * "forbidden" errors on shared hosting like Plesk.
+     * 
+     * @param Panel $panel
+     * @return bool
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Allow access if user is admin
+        if ($this->is_admin ?? false) {
+            return true;
+        }
+
+        // Allow access if user has wewenang (authority)
+        // Check both relationship and foreign key for safety
+        if (($this->relationLoaded('wewenang') && $this->wewenang) || 
+            ($this->wewenang_id ?? null)) {
+            return true;
+        }
+
+        // Deny access by default
+        return false;
     }
 }
