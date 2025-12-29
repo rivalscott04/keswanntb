@@ -15,6 +15,7 @@ class KuotaOverviewWidget extends BaseWidget
 
     public ?int $tahun = null;
     public ?int $jenisTernakId = null;
+    public ?string $jenisKuotaTernak = 'all';
 
     protected static ?string $pollingInterval = '30s';
 
@@ -22,6 +23,7 @@ class KuotaOverviewWidget extends BaseWidget
     {
         $this->tahun = now()->year;
         $this->jenisTernakId = null; // Default: Semua jenis ternak
+        $this->jenisKuotaTernak = 'all'; // Default: semua jenis kuota ternak
     }
 
     protected function getStats(): array
@@ -29,6 +31,7 @@ class KuotaOverviewWidget extends BaseWidget
         // Gunakan tahun yang dipilih atau default ke tahun berjalan
         $tahun = $this->tahun ?? now()->year;
         $jenisTernakId = $this->jenisTernakId;
+        $jenisKuotaTernak = $this->jenisKuotaTernak;
 
         // Base query dengan filter jenis ternak jika dipilih
         $kuotaPemasukanQuery = Kuota::where('tahun', $tahun)
@@ -51,6 +54,69 @@ class KuotaOverviewWidget extends BaseWidget
             $penggunaanPengeluaranQuery->where('jenis_ternak_id', $jenisTernakId);
         }
 
+        // Terapkan filter jenis ternak jika dipilih
+        if ($jenisTernakId) {
+            $kuotaPemasukanQuery->where('jenis_ternak_id', $jenisTernakId);
+            $penggunaanPemasukanQuery->where('jenis_ternak_id', $jenisTernakId);
+            $kuotaPengeluaranQuery->where('jenis_ternak_id', $jenisTernakId);
+            $penggunaanPengeluaranQuery->where('jenis_ternak_id', $jenisTernakId);
+        }
+
+        // Tambahkan filter "jenis kuota ternak" (kategori kuota spesifik)
+        if ($jenisKuotaTernak && $jenisKuotaTernak !== 'all') {
+            // Helper untuk ambil ID jenis ternak berdasar nama
+            $getIdsByNameLike = function (array $include, array $exclude = []) {
+                return JenisTernak::where(function ($q) use ($include, $exclude) {
+                        foreach ($include as $inc) {
+                            $q->where('nama', 'like', "%{$inc}%");
+                        }
+                        foreach ($exclude as $exc) {
+                            $q->where('nama', 'not like', "%{$exc}%");
+                        }
+                    })
+                    ->pluck('id')
+                    ->toArray();
+            };
+
+            switch ($jenisKuotaTernak) {
+                case 'pengeluaran_sapi_pedaging':
+                    $ids = $getIdsByNameLike(['sapi'], ['bibit']);
+                    if (!empty($ids)) {
+                        $kuotaPengeluaranQuery->whereIn('jenis_ternak_id', $ids);
+                        $penggunaanPengeluaranQuery->whereIn('jenis_ternak_id', $ids);
+                    }
+                    break;
+
+                case 'pengeluaran_kerbau_pedaging':
+                    $ids = $getIdsByNameLike(['kerbau']);
+                    if (!empty($ids)) {
+                        $kuotaPengeluaranQuery->whereIn('jenis_ternak_id', $ids);
+                        $penggunaanPengeluaranQuery->whereIn('jenis_ternak_id', $ids);
+                    }
+                    break;
+
+                case 'pengeluaran_sapi_bibit':
+                    $ids = $getIdsByNameLike(['bibit sapi']);
+                    if (!empty($ids)) {
+                        $kuotaPengeluaranQuery->whereIn('jenis_ternak_id', $ids);
+                        $penggunaanPengeluaranQuery->whereIn('jenis_ternak_id', $ids);
+                    }
+                    break;
+
+                case 'pemasukan_sapi_pedaging_lombok':
+                    $ids = $getIdsByNameLike(['sapi'], ['bibit', 'eksotik']);
+                    if (!empty($ids)) {
+                        $kuotaPemasukanQuery
+                            ->whereIn('jenis_ternak_id', $ids)
+                            ->where('pulau', 'Lombok');
+                        $penggunaanPemasukanQuery
+                            ->whereIn('jenis_ternak_id', $ids)
+                            ->where('pulau', 'Lombok');
+                    }
+                    break;
+            }
+        }
+
         // Hitung kuota pemasukan
         $totalKuotaPemasukan = $kuotaPemasukanQuery->sum('kuota');
         $terpakaiPemasukan = $penggunaanPemasukanQuery->sum('jumlah_digunakan');
@@ -66,11 +132,6 @@ class KuotaOverviewWidget extends BaseWidget
         $persentasePengeluaran = $totalKuotaPengeluaran > 0 
             ? round(($terpakaiPengeluaran / $totalKuotaPengeluaran) * 100, 2) 
             : 0;
-
-        // Tambahkan info jenis ternak yang dipilih
-        $jenisTernakLabel = $jenisTernakId 
-            ? JenisTernak::find($jenisTernakId)?->nama ?? 'Tidak Diketahui'
-            : 'Semua Jenis';
 
         return [
             Stat::make('Total Kuota Pemasukan', number_format($totalKuotaPemasukan, 0, ',', '.'))
@@ -141,6 +202,21 @@ class KuotaOverviewWidget extends BaseWidget
                 ->reactive()
                 ->afterStateUpdated(function ($state) {
                     $this->jenisTernakId = $state ?: null;
+                    $this->dispatch('updateStats');
+                }),
+            Select::make('jenisKuotaTernak')
+                ->label('Jenis Kuota Ternak')
+                ->options([
+                    'all' => 'Semua Jenis Kuota',
+                    'pengeluaran_sapi_pedaging' => 'Kuota Pengeluaran Sapi Pedaging',
+                    'pengeluaran_kerbau_pedaging' => 'Kuota Pengeluaran Kerbau Pedaging',
+                    'pengeluaran_sapi_bibit' => 'Kuota Pengeluaran Sapi Bibit',
+                    'pemasukan_sapi_pedaging_lombok' => 'Kuota Pemasukan Sapi Pedaging ke Pulau Lombok',
+                ])
+                ->default('all')
+                ->reactive()
+                ->afterStateUpdated(function ($state) {
+                    $this->jenisKuotaTernak = $state ?: 'all';
                     $this->dispatch('updateStats');
                 }),
         ];

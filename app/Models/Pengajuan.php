@@ -287,15 +287,20 @@ class Pengajuan extends Model
                 $user->kab_kota_id === $this->kab_kota_asal_id;
         }
         if ($this->tahapVerifikasi->urutan === 4) {
-            // Disnak Provinsi
+            // Disnak Provinsi - HARUS sesuai bidang
+            if ($user->wewenang->nama !== 'Disnak Provinsi') {
+                return false;
+            }
+            // Cek bidang_id user harus sesuai dengan bidang pengajuan
+            if (!$user->bidang_id || $this->jenisTernak?->bidang_id !== $user->bidang_id) {
+                return false;
+            }
             if ($this->jenis_pengajuan === 'antar_kab_kota') {
                 // Untuk antar kab/kota, provinsi tidak perlu cek kuota
-                return in_array($this->status, ['menunggu', 'diproses']) &&
-                    $user->wewenang->nama === 'Disnak Provinsi';
+                return in_array($this->status, ['menunggu', 'diproses']);
             }
             return in_array($this->status, ['menunggu', 'diproses']) &&
-                !$this->is_kuota_penuh &&
-                $user->wewenang->nama === 'Disnak Provinsi';
+                !$this->is_kuota_penuh;
         }
         if ($this->tahapVerifikasi->urutan === 5) {
             // DPMPTSP
@@ -337,9 +342,15 @@ class Pengajuan extends Model
                 $user->kab_kota_id === $this->kab_kota_asal_id;
         }
         if ($this->tahapVerifikasi->urutan === 4) {
-            // Disnak Provinsi
-            return in_array($this->status, ['menunggu', 'diproses']) &&
-                $user->wewenang->nama === 'Disnak Provinsi';
+            // Disnak Provinsi - HARUS sesuai bidang
+            if ($user->wewenang->nama !== 'Disnak Provinsi') {
+                return false;
+            }
+            // Cek bidang_id user harus sesuai dengan bidang pengajuan
+            if (!$user->bidang_id || $this->jenisTernak?->bidang_id !== $user->bidang_id) {
+                return false;
+            }
+            return in_array($this->status, ['menunggu', 'diproses']);
         }
         return false;
     }

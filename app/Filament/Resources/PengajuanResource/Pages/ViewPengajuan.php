@@ -23,6 +23,58 @@ class ViewPengajuan extends ViewRecord
 
     protected static ?string $title = 'Detail Pengajuan';
 
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+        
+        // Proteksi akses berdasarkan bidang
+        $user = auth()->user();
+        $record = $this->record;
+        
+        // Admin bisa akses semua
+        if ($user->is_admin) {
+            return;
+        }
+        
+        // Pengguna hanya bisa akses pengajuan miliknya
+        if ($user->wewenang->nama === 'Pengguna') {
+            if ($record->user_id !== $user->id) {
+                abort(403, 'Anda tidak memiliki akses ke pengajuan ini.');
+            }
+            return;
+        }
+        
+        // Disnak Provinsi: HARUS punya bidang_id dan hanya bisa akses pengajuan sesuai bidangnya
+        if ($user->wewenang->nama === 'Disnak Provinsi') {
+            if (!$user->bidang_id) {
+                abort(403, 'Akun Anda belum dikaitkan dengan bidang. Silakan hubungi administrator.');
+            }
+            $pengajuanBidangId = $record->jenisTernak?->bidang_id;
+            if ($pengajuanBidangId !== $user->bidang_id) {
+                abort(403, 'Anda tidak memiliki akses ke pengajuan dari bidang lain.');
+            }
+            return;
+        }
+        
+        // Disnak Kab/Kota: hanya bisa akses pengajuan yang asal/tujuan kab/kotanya
+        if ($user->wewenang->nama === 'Disnak Kab/Kota') {
+            $isKabKotaAsal = $record->kab_kota_asal_id === $user->kab_kota_id;
+            $isKabKotaTujuan = $record->kab_kota_tujuan_id === $user->kab_kota_id;
+            if (!$isKabKotaAsal && !$isKabKotaTujuan) {
+                abort(403, 'Anda tidak memiliki akses ke pengajuan ini.');
+            }
+            return;
+        }
+        
+        // DPMPTSP: hanya bisa akses pengajuan yang sudah disetujui/selesai
+        if ($user->wewenang->nama === 'DPMPTSP') {
+            if (!in_array($record->status, ['disetujui', 'selesai'])) {
+                abort(403, 'Anda hanya bisa mengakses pengajuan yang sudah disetujui atau selesai.');
+            }
+            return;
+        }
+    }
+
     public function getContentTabIcon(): ?string
     {
         return 'heroicon-m-eye';
@@ -99,9 +151,24 @@ class ViewPengajuan extends ViewRecord
                         ->disk('public')
                         ->directory('dokumen-pengajuan')
                         ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
-                        ->maxSize(10240) // 10MB
+                        ->maxSize(function ($get) {
+                            $jenisDokumen = $get('jenis_dokumen');
+                            // 500KB untuk permohonan dan rekomendasi
+                            if (in_array($jenisDokumen, ['rekomendasi_keswan'])) {
+                                return 512; // 500KB
+                            }
+                            // 5MB untuk dokumen lainnya
+                            return 5120; // 5MB
+                        })
                         ->visibility('private')
-                        ->required(),
+                        ->required()
+                        ->helperText(function ($get) {
+                            $jenisDokumen = $get('jenis_dokumen');
+                            if (in_array($jenisDokumen, ['rekomendasi_keswan'])) {
+                                return 'Maksimal ukuran file: 500KB';
+                            }
+                            return 'Maksimal ukuran file: 5MB';
+                        }),
                     
                     TextInput::make('keterangan')
                         ->label('Keterangan')
@@ -218,14 +285,16 @@ class ViewPengajuan extends ViewRecord
                                     return 'Tidak ada kuota';
                                 }
                                 
+                                $kuotaFormatted = $this->formatAngkaKuota($record->kuota_tersedia);
+                                
                                 if ($isLombokAsal) {
-                                    return $record->kuota_tersedia . ' ekor (Pengeluaran - Pulau Lombok)';
+                                    return $kuotaFormatted . ' ekor (Pengeluaran - Pulau Lombok)';
                                 } else {
-                                    return $record->kuota_tersedia . ' ekor (Pengeluaran - ' . $record->kabKotaAsal->nama . ')';
+                                    return $kuotaFormatted . ' ekor (Pengeluaran - ' . $record->kabKotaAsal->nama . ')';
                                 }
                             }),
                         TextEntry::make('jumlah_ternak')
-                            ->label('Jumlah Ternak yang Diajukan')
+                            ->label('Jumlah Komoditas yang Diajukan')
                             ->badge()
                             ->color('info'),
                     ])->columns(2),
@@ -233,9 +302,9 @@ class ViewPengajuan extends ViewRecord
                     ->schema([
                         TextEntry::make('nomor_surat_permohonan')->label('Nomor Surat Permohonan'),
                         TextEntry::make('tanggal_surat_permohonan')->label('Tanggal Surat Permohonan')->date(),
-                        TextEntry::make('kategoriTernak.nama')->label('Kategori Ternak'),
-                        TextEntry::make('jenisTernak.nama')->label('Jenis Ternak'),
-                        TextEntry::make('ras_ternak')->label('Ras Ternak'),
+                        TextEntry::make('kategoriTernak.nama')->label('Kategori Komoditas'),
+                        TextEntry::make('jenisTernak.nama')->label('Jenis Komoditas'),
+                        TextEntry::make('ras_ternak')->label('Ras/Strain/Nama Produk'),
                         TextEntry::make('jenis_kelamin')->label('Jenis Kelamin'),
                         TextEntry::make('kabKotaAsal.nama')->label('Kab/Kota Asal'),
                         TextEntry::make('pelabuhan_asal')->label('Pelabuhan Asal'),
@@ -400,5 +469,19 @@ class ViewPengajuan extends ViewRecord
         }
 
         return $types;
+    }
+
+    /**
+     * Format angka kuota agar mudah dibaca
+     */
+    private function formatAngkaKuota($angka): string
+    {
+        if ($angka >= 1000000) {
+            return number_format($angka / 1000000, 1, ',', '.') . 'M';
+        } elseif ($angka >= 1000) {
+            return number_format($angka / 1000, 1, ',', '.') . 'K';
+        } else {
+            return number_format($angka, 0, ',', '.');
+        }
     }
 }

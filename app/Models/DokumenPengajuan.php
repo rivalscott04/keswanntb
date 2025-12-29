@@ -18,6 +18,7 @@ class DokumenPengajuan extends Model
         'user_id',
         'jenis_dokumen',
         'nama_file',
+        'nomor_dokumen',
         'path_file',
         'ukuran_file',
         'tipe_file',

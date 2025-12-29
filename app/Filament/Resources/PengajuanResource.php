@@ -118,11 +118,23 @@ class PengajuanResource extends Resource
             ];
         };
 
+        // Helper untuk cek kategori "Produk Hewan/Produk Olahan"
+        $isProdukHewan = function (callable $get) {
+            $kategoriId = $get('kategori_ternak_id');
+            if (!$kategoriId) {
+                return false;
+            }
+            $kategori = \App\Models\KategoriTernak::find($kategoriId);
+            return $kategori && $kategori->nama === 'Produk Hewan/Produk Olahan';
+        };
+
         return $form
             ->schema([
                 Forms\Components\Select::make('tahun_pengajuan')
                     ->label('Tahun Pengajuan')
-                    ->options(collect(range(date('Y'), date('Y') - 4))->mapWithKeys(fn($y) => [$y => $y])->toArray())
+                    // Tambahkan pilihan tahun sampai beberapa tahun ke depan (mis. 5 tahun),
+                    // agar pengusaha bisa memilih tahun 2026 ke atas.
+                    ->options(collect(range(date('Y') + 5, date('Y') - 4))->mapWithKeys(fn($y) => [$y => $y])->toArray())
                     ->default(date('Y'))
                     ->required()
                     ->live()
@@ -131,7 +143,7 @@ class PengajuanResource extends Resource
                 Forms\Components\Section::make('Lokasi')
                     ->schema([
                         Forms\Components\Select::make('kab_kota_asal_id')
-                            ->label('Kab/Kota Asal Ternak')
+                            ->label('Kab/Kota Asal Komoditas')
                             ->options(
                                 fn(callable $get) =>
                                 KabKota::when($get('kab_kota_tujuan_id'), function ($query, $tujuanId) {
@@ -164,7 +176,7 @@ class PengajuanResource extends Resource
                             ->columnSpanFull(),
 
                         Forms\Components\Select::make('kab_kota_tujuan_id')
-                            ->label('Kab/Kota Tujuan Ternak')
+                            ->label('Kab/Kota Tujuan Komoditas')
                             ->options(
                                 fn(callable $get) =>
                                 KabKota::when($get('kab_kota_asal_id'), function ($query, $asalId) {
@@ -206,17 +218,17 @@ class PengajuanResource extends Resource
                             ->columnSpanFull(),
                     ])->columns(),
 
-                Forms\Components\Section::make('Informasi Ternak')
+                Forms\Components\Section::make('Informasi Komoditas')
                     ->schema([
                         Forms\Components\Select::make('kategori_ternak_id')
-                            ->label('Kategori Ternak')
+                            ->label('Kategori Komoditas')
                             ->relationship('kategoriTernak', 'nama')
                             ->required()
                             ->live()
                             ->afterStateUpdated(fn(callable $set) => $set('jenis_ternak_id', null)),
 
                         Forms\Components\Select::make('jenis_ternak_id')
-                            ->label('Jenis Ternak')
+                            ->label('Jenis Komoditas')
                             ->options(fn(callable $get) => JenisTernak::where('kategori_ternak_id', $get('kategori_ternak_id'))->pluck('nama', 'id'))
                             ->searchable()
                             ->preload()
@@ -234,11 +246,11 @@ class PengajuanResource extends Resource
                             ->live(),
 
                         Forms\Components\TextInput::make('ras_ternak')
-                            ->label('Ras Ternak')
+                            ->label('Ras/Strain/Nama Produk')
                             ->required(),
 
                         Forms\Components\TextInput::make('jumlah_ternak')
-                            ->label('Jumlah Ternak')
+                            ->label('Jumlah Komoditas')
                             ->numeric()
                             ->minValue(1)
                             ->maxValue(function (callable $get) use ($cekKuotaTersedia) {
@@ -312,7 +324,19 @@ class PengajuanResource extends Resource
                             ])
                             ->required()
                             ->reactive()
-                            ->columnSpanFull(),
+                            ->columnSpan(1),
+
+                        Forms\Components\Select::make('satuan')
+                            ->label('Satuan')
+                            ->options([
+                                'ekor' => 'Ekor',
+                                'butir' => 'Butir',
+                                'kg' => 'Kg',
+                                'liter' => 'Liter',
+                            ])
+                            ->required()
+                            ->default('ekor')
+                            ->columnSpan(1),
                     ])->columns(),
 
                 Forms\Components\Section::make('Dokumen')
@@ -321,7 +345,9 @@ class PengajuanResource extends Resource
                             ->label('Surat Permohonan Perusahaan')
                             ->disk('public')
                             ->directory('pengajuan/surat_permohonan')
-                            ->acceptedFileTypes(['application/pdf']),
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(512) // 500KB
+                            ->helperText('Maksimal ukuran file: 500KB'),
 
                         Forms\Components\TextInput::make('nomor_surat_permohonan')
                             ->label('Nomor Surat Permohonan Perusahaan')
@@ -342,13 +368,17 @@ class PengajuanResource extends Resource
                             ->label('Hasil Uji Lab')
                             ->disk('public')
                             ->directory('pengajuan/hasil_uji_lab')
-                            ->acceptedFileTypes(['application/pdf']),
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(5120) // 5MB
+                            ->helperText('Maksimal ukuran file: 5MB'),
 
                         Forms\Components\FileUpload::make('dokumen_lainnya')
                             ->label('Dokumen Lainnya (Jika Ada)')
                             ->disk('public')
                             ->directory('pengajuan/dokumen_lainnya')
-                            ->acceptedFileTypes(['application/pdf']),
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(5120) // 5MB
+                            ->helperText('Maksimal ukuran file: 5MB'),
                     ]),
             ]);
     }

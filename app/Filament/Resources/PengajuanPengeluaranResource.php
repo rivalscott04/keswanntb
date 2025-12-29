@@ -95,11 +95,23 @@ class PengajuanPengeluaranResource extends Resource
                 return $get($key);
             });
         };
+        // Helper untuk cek kategori "Produk Hewan/Produk Olahan"
+        $isProdukHewan = function (callable $get) {
+            $kategoriId = $get('kategori_ternak_id');
+            if (!$kategoriId) {
+                return false;
+            }
+            $kategori = \App\Models\KategoriTernak::find($kategoriId);
+            return $kategori && $kategori->nama === 'Produk Hewan/Produk Olahan';
+        };
+
         return $form
             ->schema([
                 Forms\Components\Select::make('tahun_pengajuan')
                     ->label('Tahun Pengajuan')
-                    ->options(collect(range(date('Y'), date('Y') - 4))->mapWithKeys(fn($y) => [$y => $y])->toArray())
+                    // Tambahkan pilihan tahun sampai beberapa tahun ke depan (mis. 5 tahun),
+                    // agar pengusaha bisa memilih tahun 2026 ke atas.
+                    ->options(collect(range(date('Y') + 5, date('Y') - 4))->mapWithKeys(fn($y) => [$y => $y])->toArray())
                     ->default(date('Y'))
                     ->required()
                     ->live()
@@ -108,7 +120,7 @@ class PengajuanPengeluaranResource extends Resource
                 Forms\Components\Section::make('Lokasi')
                     ->schema([
                         Forms\Components\Select::make('kab_kota_asal_id')
-                            ->label('Kab/Kota Asal Ternak')
+                            ->label('Kab/Kota Asal Komoditas')
                             ->relationship('kabKotaAsal', 'nama')
                             ->searchable()
                             ->preload()
@@ -134,7 +146,7 @@ class PengajuanPengeluaranResource extends Resource
                             ->columnSpanFull(),
 
                         Forms\Components\Select::make('provinsi_tujuan_id')
-                            ->label('Provinsi Tujuan Ternak')
+                            ->label('Provinsi Tujuan Komoditas')
                             ->relationship('provinsiTujuan', 'nama', fn($query) => $query->where('nama', '!=', 'Nusa Tenggara Barat'))
                             ->searchable()
                             ->preload()
@@ -142,7 +154,7 @@ class PengajuanPengeluaranResource extends Resource
                             ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('kab_kota_tujuan')
-                            ->label('Kabupaten/Kota Tujuan Ternak')
+                            ->label('Kabupaten/Kota Tujuan Komoditas')
                             ->required(),
 
                         Forms\Components\Select::make('pelabuhan_tujuan')
@@ -164,17 +176,17 @@ class PengajuanPengeluaranResource extends Resource
                             ->columnSpanFull(),
                     ])->columns(),
 
-                Forms\Components\Section::make('Informasi Ternak')
+                Forms\Components\Section::make('Informasi Komoditas')
                     ->schema([
                         Forms\Components\Select::make('kategori_ternak_id')
-                            ->label('Kategori Ternak')
+                            ->label('Kategori Komoditas')
                             ->relationship('kategoriTernak', 'nama')
                             ->required()
                             ->live()
                             ->afterStateUpdated(fn(callable $set) => $set('jenis_ternak_id', null)),
 
                         Forms\Components\Select::make('jenis_ternak_id')
-                            ->label('Jenis Ternak')
+                            ->label('Jenis Komoditas')
                             ->options(fn(callable $get) => \App\Models\JenisTernak::where('kategori_ternak_id', $get('kategori_ternak_id'))->pluck('nama', 'id'))
                             ->searchable()
                             ->preload()
@@ -196,12 +208,12 @@ class PengajuanPengeluaranResource extends Resource
                                 'betina' => 'Betina',
                                 'gabung' => 'Gabung',
                             ])
-                            ->required(fn(callable $get) => !$isBibitSapi($get))
-                            ->visible(fn(callable $get) => !$isBibitSapi($get))
+                            ->required(fn(callable $get) => !$isBibitSapi($get) && !$isProdukHewan($get))
+                            ->visible(fn(callable $get) => !$isBibitSapi($get) && !$isProdukHewan($get))
                             ->live(),
 
                         Forms\Components\TextInput::make('ras_ternak')
-                            ->label('Ras Ternak')
+                            ->label('Ras/Strain/Nama Produk')
                             ->required(),
 
                         // Info untuk Bibit Sapi
@@ -215,7 +227,7 @@ class PengajuanPengeluaranResource extends Resource
 
                         // Field jumlah_ternak - hanya muncul jika BUKAN Bibit Sapi
                         Forms\Components\TextInput::make('jumlah_ternak')
-                            ->label('Jumlah Ternak')
+                            ->label('Jumlah Komoditas')
                             ->numeric()
                             ->minValue(1)
                             ->maxValue(function (callable $get) use ($cekKuotaPengeluaran) {
@@ -245,11 +257,11 @@ class PengajuanPengeluaranResource extends Resource
                             ->required(fn(callable $get) => !$isBibitSapi($get))
                             ->visible(fn(callable $get) => !$isBibitSapi($get))
                             ->reactive()
-                            ->columnSpanFull(),
+                            ->columnSpan(1),
 
                         // Field jumlah_jantan dan jumlah_betina - hanya muncul jika Bibit Sapi
                         Forms\Components\TextInput::make('jumlah_jantan')
-                            ->label('Jumlah Ternak Jantan')
+                            ->label('Jumlah Komoditas Jantan')
                             ->numeric()
                             ->minValue(0)
                             ->default(0)
@@ -293,7 +305,7 @@ class PengajuanPengeluaranResource extends Resource
                             }),
 
                         Forms\Components\TextInput::make('jumlah_betina')
-                            ->label('Jumlah Ternak Betina')
+                            ->label('Jumlah Komoditas Betina')
                             ->numeric()
                             ->minValue(0)
                             ->default(0)
@@ -335,13 +347,27 @@ class PengajuanPengeluaranResource extends Resource
                                     $set('jumlah_ternak', $jantan + $betina);
                                 }
                             }),
+
+                        Forms\Components\Select::make('satuan')
+                            ->label('Satuan')
+                            ->options([
+                                'ekor' => 'Ekor',
+                                'butir' => 'Butir',
+                                'kg' => 'Kg',
+                                'liter' => 'Liter',
+                            ])
+                            ->required()
+                            ->default('ekor')
+                            ->columnSpan(1),
                     ])->columns(),
 
                 Forms\Components\Section::make('Dokumen')
                     ->schema([
                         Forms\Components\FileUpload::make('surat_permohonan')
                             ->label('Surat Permohonan Perusahaan')
-                            ->acceptedFileTypes(['application/pdf']),
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(512) // 500KB
+                            ->helperText('Maksimal ukuran file: 500KB'),
 
                         Forms\Components\TextInput::make('nomor_surat_permohonan')
                             ->label('Nomor Surat Permohonan Perusahaan')
@@ -360,15 +386,21 @@ class PengajuanPengeluaranResource extends Resource
 
                         Forms\Components\FileUpload::make('hasil_uji_lab')
                             ->label('Hasil Uji Lab')
-                            ->acceptedFileTypes(['application/pdf']),
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(5120) // 5MB
+                            ->helperText('Maksimal ukuran file: 5MB'),
 
                         Forms\Components\FileUpload::make('dokumen_lainnya')
                             ->label('Dokumen Lainnya (Jika Ada)')
-                            ->acceptedFileTypes(['application/pdf']),
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(5120) // 5MB
+                            ->helperText('Maksimal ukuran file: 5MB'),
 
                         Forms\Components\FileUpload::make('izin_ptsp_daerah')
                             ->label('Izin PTSP Daerah Penerima')
-                            ->acceptedFileTypes(['application/pdf']),
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(5120) // 5MB
+                            ->helperText('Maksimal ukuran file: 5MB'),
                     ]),
             ]);
     }

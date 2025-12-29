@@ -43,19 +43,35 @@ class DokumenPengajuanResource extends Resource
                         'izin_pemasukan' => 'Izin Pemasukan',
                         'dokumen_lainnya' => 'Dokumen Lainnya',
                     ])
-                    ->required(),
+                    ->required()
+                    ->reactive(),
                 
                 Forms\Components\FileUpload::make('path_file')
                     ->label('File Dokumen')
                     ->disk('public')
                     ->directory('dokumen-pengajuan')
                     ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
-                    ->maxSize(10240) // 10MB
+                    ->maxSize(function ($get) {
+                        $jenisDokumen = $get('jenis_dokumen');
+                        // 500KB untuk rekomendasi keswan
+                        if (in_array($jenisDokumen, ['rekomendasi_keswan'])) {
+                            return 512; // 500KB
+                        }
+                        // 5MB untuk dokumen lainnya
+                        return 5120; // 5MB
+                    })
                     ->visibility('private')
                     ->downloadable()
                     ->openable()
                     ->previewable(false)
-                    ->required(),
+                    ->required()
+                    ->helperText(function ($get) {
+                        $jenisDokumen = $get('jenis_dokumen');
+                        if (in_array($jenisDokumen, ['rekomendasi_keswan'])) {
+                            return 'Maksimal ukuran file: 500KB';
+                        }
+                        return 'Maksimal ukuran file: 5MB';
+                    }),
                 
                 Forms\Components\TextInput::make('nama_file')
                     ->label('Nama File')

@@ -40,14 +40,15 @@ class ListPengajuanPengeluaran extends ListRecords
             return $query;
         }
         if ($user->wewenang->nama === 'Disnak Provinsi') {
-            // Disnak Provinsi: filter berdasarkan bidang jika ada
+            // Disnak Provinsi: HARUS filter berdasarkan bidang
+            // Setiap Disnak Provinsi harus punya bidang_id untuk mencegah tumpang tindih data antar bidang
             if ($user->bidang_id) {
                 return $query->whereHas('jenisTernak', function ($q) use ($user) {
                     $q->where('bidang_id', $user->bidang_id);
                 });
             }
-            // Jika tidak ada bidang_id, lihat semua
-            return $query;
+            // Jika tidak ada bidang_id, return empty query (tidak bisa akses)
+            return $query->whereRaw('1 = 0');
         }
         if ($user->wewenang->nama === 'Disnak Kab/Kota') {
             // Disnak Kab/Kota hanya lihat pengajuan yang asal kab/kotanya

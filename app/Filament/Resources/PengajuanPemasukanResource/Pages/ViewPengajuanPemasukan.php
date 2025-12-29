@@ -113,7 +113,7 @@ class ViewPengajuanPemasukan extends ViewRecord
                                 'selesai' => 'success',
                             }),
                         Infolists\Components\TextEntry::make('jumlah_ternak')
-                            ->label('Jumlah Ternak yang Diajukan')
+                            ->label('Jumlah Komoditas yang Diajukan')
                             ->badge()
                             ->color('info'),
                     ])->columns(2),
@@ -187,16 +187,16 @@ class ViewPengajuanPemasukan extends ViewRecord
                             ->label('Pelabuhan Tujuan'),
                     ])->columns(2),
 
-                Infolists\Components\Section::make('Informasi Ternak')
+                Infolists\Components\Section::make('Informasi Komoditas')
                     ->schema([
                         Infolists\Components\TextEntry::make('kategoriTernak.nama')
-                            ->label('Kategori Ternak'),
+                            ->label('Kategori Komoditas'),
                         Infolists\Components\TextEntry::make('jenisTernak.nama')
-                            ->label('Jenis Ternak'),
+                            ->label('Jenis Komoditas'),
                         Infolists\Components\TextEntry::make('jenis_kelamin')
                             ->label('Jenis Kelamin'),
                         Infolists\Components\TextEntry::make('ras_ternak')
-                            ->label('Ras Ternak'),
+                            ->label('Ras/Strain/Nama Produk'),
                     ])->columns(2),
 
                 Infolists\Components\Section::make('Dokumen')

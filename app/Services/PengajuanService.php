@@ -204,6 +204,18 @@ class PengajuanService
                 $query->where('tahap_verifikasi_id', $tahap->id)
                     ->whereIn('status', ['menunggu', 'diproses']);
             }
+            // Filter berdasarkan bidang untuk Disnak Provinsi (bukan admin)
+            // Setiap Disnak Provinsi HARUS punya bidang_id untuk mencegah tumpang tindih data
+            if ($user->wewenang->nama === 'Disnak Provinsi') {
+                if ($user->bidang_id) {
+                    $query->whereHas('jenisTernak', function ($q) use ($user) {
+                        $q->where('bidang_id', $user->bidang_id);
+                    });
+                } else {
+                    // Jika tidak ada bidang_id, return empty query
+                    $query->whereRaw('1 = 0');
+                }
+            }
         } elseif ($user->wewenang->nama === 'Disnak Kab/Kota') {
             // urutan 2 = Tujuan, urutan 3 = Asal
             $tahapTujuan = TahapVerifikasi::where('urutan', 2)->first();

@@ -225,7 +225,9 @@ class PengajuanPemasukanResource extends Resource
                     ->schema([
                         Forms\Components\FileUpload::make('surat_permohonan')
                             ->label('Surat Permohonan Perusahaan')
-                            ->acceptedFileTypes(['application/pdf']),
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(512) // 500KB
+                            ->helperText('Maksimal ukuran file: 500KB'),
                         Forms\Components\TextInput::make('nomor_surat_permohonan')
                             ->label('Nomor Surat Permohonan Perusahaan')
                             ->required(),
@@ -239,10 +241,14 @@ class PengajuanPemasukanResource extends Resource
                             ->hiddenOn('create'),
                         Forms\Components\FileUpload::make('hasil_uji_lab')
                             ->label('Hasil Uji Lab')
-                            ->acceptedFileTypes(['application/pdf']),
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(5120) // 5MB
+                            ->helperText('Maksimal ukuran file: 5MB'),
                         Forms\Components\FileUpload::make('dokumen_lainnya')
                             ->label('Dokumen Lainnya (Jika Ada)')
-                            ->acceptedFileTypes(['application/pdf']),
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(5120) // 5MB
+                            ->helperText('Maksimal ukuran file: 5MB'),
                         Forms\Components\FileUpload::make('izin_ptsp_daerah')
                             ->label('Izin PTSP Daerah Pengeluaran')
                             ->acceptedFileTypes(['application/pdf']),
