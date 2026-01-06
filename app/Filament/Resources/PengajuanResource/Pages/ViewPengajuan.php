@@ -196,6 +196,39 @@ class ViewPengajuan extends ViewRecord
                         ->send();
                 }),
             
+            // Action untuk generate ulang dokumen (untuk admin atau jika dokumen belum ada)
+            Actions\Action::make('generate_dokumen')
+                ->label('Generate Dokumen')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('warning')
+                ->visible(fn($record) => 
+                    ($user->is_admin || $user->wewenang->nama === 'Disnak Provinsi') && 
+                    $record->status === 'disetujui'
+                )
+                ->requiresConfirmation()
+                ->modalHeading('Generate Dokumen Otomatis')
+                ->modalDescription('Apakah Anda yakin ingin meng-generate dokumen untuk pengajuan ini? Dokumen yang sudah ada tidak akan dihapus.')
+                ->action(function () {
+                    try {
+                        $dokumenYangDiGenerate = \App\Services\PengajuanService::generateDokumenOtomatis($this->record);
+                        $count = count($dokumenYangDiGenerate);
+                        
+                        Notification::make()
+                            ->title($count > 0 ? "Berhasil generate {$count} dokumen" : 'Tidak ada dokumen yang di-generate')
+                            ->body($count > 0 
+                                ? "Dokumen telah di-generate dan siap untuk di-download." 
+                                : 'Pastikan user Disnak Kab/Kota dan Provinsi sudah terdaftar untuk pengajuan ini.')
+                            ->success()
+                            ->send();
+                    } catch (\Exception $e) {
+                        Notification::make()
+                            ->title('Gagal generate dokumen')
+                            ->body('Error: ' . $e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                }),
+            
             Actions\EditAction::make()
                 ->visible(fn($record) => ($user->id === $record->user_id && in_array($record->status, ['menunggu', 'ditolak'])) || $user->is_admin),
         ];

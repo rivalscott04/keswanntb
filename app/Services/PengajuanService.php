@@ -472,7 +472,7 @@ class PengajuanService
     /**
      * Generate dokumen otomatis setelah Disnak Provinsi menyetujui
      */
-    private static function generateDokumenOtomatis(Pengajuan $pengajuan)
+    public static function generateDokumenOtomatis(Pengajuan $pengajuan)
     {
         // Reload pengajuan dengan relationships
         $pengajuan->load(['user', 'jenisTernak.kategoriTernak', 'kabKotaAsal', 'kabKotaTujuan', 'provinsiAsal', 'provinsiTujuan']);
@@ -483,17 +483,31 @@ class PengajuanService
         // Generate dokumen berdasarkan jenis pengajuan
         $dokumenYangDiGenerate = [];
         
+        \Log::info('Memulai generate dokumen otomatis', [
+            'pengajuan_id' => $pengajuan->id,
+            'jenis_pengajuan' => $pengajuan->jenis_pengajuan,
+            'kab_kota_asal_id' => $pengajuan->kab_kota_asal_id,
+            'kab_kota_tujuan_id' => $pengajuan->kab_kota_tujuan_id,
+            'bidang_id' => $pengajuan->jenisTernak?->bidang_id,
+        ]);
+        
         if ($pengajuan->jenis_pengajuan === 'pengeluaran') {
             // Untuk pengeluaran, generate:
             // 1. Rekomendasi Keswan dari kab/kota asal (jika ada user Disnak Kab/Kota asal)
             // 2. Izin Pengeluaran dari DPMPTSP (akan di-generate nanti oleh DPMPTSP)
             
             if ($pengajuan->kab_kota_asal_id) {
-                $userKabKotaAsal = \App\Models\User::where('wewenang_id', 3) // Disnak Kab/Kota
+                $userKabKotaAsal = \App\Models\User::whereHas('wewenang', function($q) {
+                        $q->where('nama', 'Disnak Kab/Kota');
+                    })
                     ->where('kab_kota_id', $pengajuan->kab_kota_asal_id)
                     ->first();
                 
                 if ($userKabKotaAsal) {
+                    \Log::info('Menemukan user Disnak Kab/Kota asal', [
+                        'user_id' => $userKabKotaAsal->id,
+                        'kab_kota_id' => $pengajuan->kab_kota_asal_id,
+                    ]);
                     try {
                         $dokumen = \App\Services\DokumenService::generateDokumen(
                             $pengajuan,
@@ -501,9 +515,20 @@ class PengajuanService
                             $userKabKotaAsal->id
                         );
                         $dokumenYangDiGenerate[] = $dokumen;
+                        \Log::info('Berhasil generate rekomendasi keswan dari kab/kota asal', [
+                            'dokumen_id' => $dokumen->id,
+                        ]);
                     } catch (\Exception $e) {
-                        \Log::warning('Gagal generate rekomendasi keswan dari kab/kota asal: ' . $e->getMessage());
+                        \Log::error('Gagal generate rekomendasi keswan dari kab/kota asal', [
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
+                        ]);
                     }
+                } else {
+                    \Log::warning('User Disnak Kab/Kota asal tidak ditemukan', [
+                        'kab_kota_asal_id' => $pengajuan->kab_kota_asal_id,
+                        'kab_kota_asal_nama' => $pengajuan->kabKotaAsal?->nama,
+                    ]);
                 }
             }
         } elseif ($pengajuan->jenis_pengajuan === 'pemasukan') {
@@ -512,11 +537,17 @@ class PengajuanService
             // 2. Izin Pemasukan dari DPMPTSP (akan di-generate nanti oleh DPMPTSP)
             
             if ($pengajuan->kab_kota_tujuan_id) {
-                $userKabKotaTujuan = \App\Models\User::where('wewenang_id', 3) // Disnak Kab/Kota
+                $userKabKotaTujuan = \App\Models\User::whereHas('wewenang', function($q) {
+                        $q->where('nama', 'Disnak Kab/Kota');
+                    })
                     ->where('kab_kota_id', $pengajuan->kab_kota_tujuan_id)
                     ->first();
                 
                 if ($userKabKotaTujuan) {
+                    \Log::info('Menemukan user Disnak Kab/Kota tujuan', [
+                        'user_id' => $userKabKotaTujuan->id,
+                        'kab_kota_id' => $pengajuan->kab_kota_tujuan_id,
+                    ]);
                     try {
                         $dokumen = \App\Services\DokumenService::generateDokumen(
                             $pengajuan,
@@ -524,9 +555,20 @@ class PengajuanService
                             $userKabKotaTujuan->id
                         );
                         $dokumenYangDiGenerate[] = $dokumen;
+                        \Log::info('Berhasil generate rekomendasi keswan dari kab/kota tujuan', [
+                            'dokumen_id' => $dokumen->id,
+                        ]);
                     } catch (\Exception $e) {
-                        \Log::warning('Gagal generate rekomendasi keswan dari kab/kota tujuan: ' . $e->getMessage());
+                        \Log::error('Gagal generate rekomendasi keswan dari kab/kota tujuan', [
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
+                        ]);
                     }
+                } else {
+                    \Log::warning('User Disnak Kab/Kota tujuan tidak ditemukan', [
+                        'kab_kota_tujuan_id' => $pengajuan->kab_kota_tujuan_id,
+                        'kab_kota_tujuan_nama' => $pengajuan->kabKotaTujuan?->nama,
+                    ]);
                 }
             }
         } elseif ($pengajuan->jenis_pengajuan === 'antar_kab_kota') {
@@ -535,11 +577,18 @@ class PengajuanService
             // 2. Rekomendasi Keswan dari kab/kota tujuan (jika ada user Disnak Kab/Kota tujuan)
             
             if ($pengajuan->kab_kota_asal_id) {
-                $userKabKotaAsal = \App\Models\User::where('wewenang_id', 3) // Disnak Kab/Kota
+                $userKabKotaAsal = \App\Models\User::whereHas('wewenang', function($q) {
+                        $q->where('nama', 'Disnak Kab/Kota');
+                    })
                     ->where('kab_kota_id', $pengajuan->kab_kota_asal_id)
                     ->first();
                 
                 if ($userKabKotaAsal) {
+                    \Log::info('Menemukan user Disnak Kab/Kota asal untuk antar kab/kota', [
+                        'user_id' => $userKabKotaAsal->id,
+                        'kab_kota_id' => $pengajuan->kab_kota_asal_id,
+                        'kab_kota_nama' => $pengajuan->kabKotaAsal?->nama,
+                    ]);
                     try {
                         $dokumen = \App\Services\DokumenService::generateDokumen(
                             $pengajuan,
@@ -547,18 +596,36 @@ class PengajuanService
                             $userKabKotaAsal->id
                         );
                         $dokumenYangDiGenerate[] = $dokumen;
+                        \Log::info('Berhasil generate rekomendasi keswan dari kab/kota asal (antar kab/kota)', [
+                            'dokumen_id' => $dokumen->id,
+                        ]);
                     } catch (\Exception $e) {
-                        \Log::warning('Gagal generate rekomendasi keswan dari kab/kota asal: ' . $e->getMessage());
+                        \Log::error('Gagal generate rekomendasi keswan dari kab/kota asal (antar kab/kota)', [
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
+                        ]);
                     }
+                } else {
+                    \Log::warning('User Disnak Kab/Kota asal tidak ditemukan untuk antar kab/kota', [
+                        'kab_kota_asal_id' => $pengajuan->kab_kota_asal_id,
+                        'kab_kota_asal_nama' => $pengajuan->kabKotaAsal?->nama,
+                    ]);
                 }
             }
             
             if ($pengajuan->kab_kota_tujuan_id) {
-                $userKabKotaTujuan = \App\Models\User::where('wewenang_id', 3) // Disnak Kab/Kota
+                $userKabKotaTujuan = \App\Models\User::whereHas('wewenang', function($q) {
+                        $q->where('nama', 'Disnak Kab/Kota');
+                    })
                     ->where('kab_kota_id', $pengajuan->kab_kota_tujuan_id)
                     ->first();
                 
                 if ($userKabKotaTujuan) {
+                    \Log::info('Menemukan user Disnak Kab/Kota tujuan untuk antar kab/kota', [
+                        'user_id' => $userKabKotaTujuan->id,
+                        'kab_kota_id' => $pengajuan->kab_kota_tujuan_id,
+                        'kab_kota_nama' => $pengajuan->kabKotaTujuan?->nama,
+                    ]);
                     try {
                         $dokumen = \App\Services\DokumenService::generateDokumen(
                             $pengajuan,
@@ -566,19 +633,36 @@ class PengajuanService
                             $userKabKotaTujuan->id
                         );
                         $dokumenYangDiGenerate[] = $dokumen;
+                        \Log::info('Berhasil generate rekomendasi keswan dari kab/kota tujuan (antar kab/kota)', [
+                            'dokumen_id' => $dokumen->id,
+                        ]);
                     } catch (\Exception $e) {
-                        \Log::warning('Gagal generate rekomendasi keswan dari kab/kota tujuan: ' . $e->getMessage());
+                        \Log::error('Gagal generate rekomendasi keswan dari kab/kota tujuan (antar kab/kota)', [
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
+                        ]);
                     }
+                } else {
+                    \Log::warning('User Disnak Kab/Kota tujuan tidak ditemukan untuk antar kab/kota', [
+                        'kab_kota_tujuan_id' => $pengajuan->kab_kota_tujuan_id,
+                        'kab_kota_tujuan_nama' => $pengajuan->kabKotaTujuan?->nama,
+                    ]);
                 }
             }
         }
         
         // Generate rekomendasi dari Disnak Provinsi
-        $userProvinsi = \App\Models\User::where('wewenang_id', 2) // Disnak Provinsi
+        $userProvinsi = \App\Models\User::whereHas('wewenang', function($q) {
+                $q->where('nama', 'Disnak Provinsi');
+            })
             ->where('bidang_id', $pengajuan->jenisTernak?->bidang_id)
             ->first();
         
         if ($userProvinsi) {
+            \Log::info('Menemukan user Disnak Provinsi', [
+                'user_id' => $userProvinsi->id,
+                'bidang_id' => $pengajuan->jenisTernak?->bidang_id,
+            ]);
             try {
                 $dokumen = \App\Services\DokumenService::generateDokumen(
                     $pengajuan,
@@ -586,10 +670,25 @@ class PengajuanService
                     $userProvinsi->id
                 );
                 $dokumenYangDiGenerate[] = $dokumen;
+                \Log::info('Berhasil generate rekomendasi keswan dari provinsi', [
+                    'dokumen_id' => $dokumen->id,
+                ]);
             } catch (\Exception $e) {
-                \Log::warning('Gagal generate rekomendasi keswan dari provinsi: ' . $e->getMessage());
+                \Log::error('Gagal generate rekomendasi keswan dari provinsi', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
             }
+        } else {
+            \Log::warning('User Disnak Provinsi tidak ditemukan', [
+                'bidang_id' => $pengajuan->jenisTernak?->bidang_id,
+            ]);
         }
+        
+        \Log::info('Selesai generate dokumen otomatis', [
+            'pengajuan_id' => $pengajuan->id,
+            'jumlah_dokumen_di_generate' => count($dokumenYangDiGenerate),
+        ]);
         
         return $dokumenYangDiGenerate;
     }
