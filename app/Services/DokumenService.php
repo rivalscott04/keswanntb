@@ -19,16 +19,16 @@ class DokumenService
         $templates = [
             // Rekomendasi berdasarkan jenis pengajuan
             'rekomendasi_keswan' => [
-                'pemasukan' => public_path('docs/DRAFT PEmasukan.doc'),
-                'pengeluaran' => public_path('docs/DRAFT PENGAJUAN.doc'),
-                'antar_kab_kota' => public_path('docs/DRAFT PENGAJUAN.doc'),
-                'default' => public_path('docs/DRAFT PENGAJUAN.doc'),
+                'pemasukan' => public_path('docs/DRAFT PEmasukan.docx'),
+                'pengeluaran' => public_path('docs/DRAFT PENGAJUAN.docx'),
+                'antar_kab_kota' => public_path('docs/DRAFT PENGAJUAN.docx'),
+                'default' => public_path('docs/DRAFT PENGAJUAN.docx'),
             ],
             'skkh' => [
-                'default' => public_path('docs/DRAFT PENGAJUAN.doc'),
+                'default' => public_path('docs/DRAFT PENGAJUAN.docx'),
             ],
             'surat_keterangan_veteriner' => [
-                'default' => public_path('docs/DRAFT PENGAJUAN.doc'),
+                'default' => public_path('docs/DRAFT PENGAJUAN.docx'),
             ],
             'izin_pengeluaran' => [
                 'default' => public_path('docs/REKOM PENGELUARAN UNGGAS DOC KE LUAR DAERAH.pdf'),
@@ -72,11 +72,20 @@ class DokumenService
             throw new \Exception("Template untuk jenis dokumen '{$jenisDokumen}' tidak ditemukan.");
         }
 
-        // Cek apakah file template adalah .doc/.docx atau .pdf
+        // Cek apakah file template adalah .docx (TemplateProcessor hanya mendukung .docx)
         $extension = strtolower(pathinfo($templatePath, PATHINFO_EXTENSION));
         
-        if (!in_array($extension, ['doc', 'docx'])) {
-            throw new \Exception("Template harus berupa file Word (.doc atau .docx). File yang ditemukan: {$extension}");
+        if ($extension !== 'docx') {
+            throw new \Exception("Template harus berupa file Word (.docx). File yang ditemukan: {$extension}");
+        }
+
+        // Cek apakah file template ada dan bisa dibaca
+        if (!file_exists($templatePath)) {
+            throw new \Exception("File template tidak ditemukan: {$templatePath}");
+        }
+
+        if (!is_readable($templatePath)) {
+            throw new \Exception("File template tidak bisa dibaca: {$templatePath}");
         }
 
         try {

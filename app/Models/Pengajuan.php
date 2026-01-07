@@ -183,6 +183,7 @@ class Pengajuan extends Model
             } else {
                 // Untuk pengajuan pengeluaran, hanya cek kuota pengeluaran dari asal
                 // Kuota pengeluaran dari Lombok: global
+                // Kuota pengeluaran dari Sumbawa: TIDAK ada kuota (tidak dikurangi)
                 if ($isLombokAsal) {
                     // Pengeluaran dari Lombok: global
                     return \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
@@ -192,14 +193,9 @@ class Pengajuan extends Model
                         'pengeluaran'
                     );
                 } else {
-                    // Pengeluaran dari kab/kota lain: per kab/kota
-                    return \App\Models\PenggunaanKuota::getKuotaTersisa(
-                        $this->tahun_pengajuan,
-                        $this->jenis_ternak_id,
-                        $this->kab_kota_asal_id,
-                        $this->jenis_kelamin,
-                        'pengeluaran'
-                    );
+                    // Pengeluaran dari kab/kota di Sumbawa (TIDAK akan dikurangi)
+                    // Return nilai besar untuk menunjukkan tidak ada batasan
+                    return PHP_INT_MAX;
                 }
             }
         }

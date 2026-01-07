@@ -314,7 +314,13 @@ class ViewPengajuan extends ViewRecord
                                 
                                 $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
                                 
-                                if ($record->kuota_tersedia <= 0) {
+                                // Jika kuota_tersedia adalah PHP_INT_MAX atau sangat besar, berarti tidak ada batasan kuota
+                                // PHP_INT_MAX biasanya 9.223.372.036.854.775.807 (64-bit) atau 2.147.483.647 (32-bit)
+                                // Cek jika nilai lebih besar dari 1 triliun, kemungkinan adalah PHP_INT_MAX
+                                if ($record->kuota_tersedia > 1000000000000 || $record->kuota_tersedia <= 0) {
+                                    if ($record->jenis_pengajuan === 'pengeluaran' && !$isLombokAsal && $kabKotaAsal) {
+                                        return 'Bebas keluar (Pengeluaran - ' . $kabKotaAsal->nama . ')';
+                                    }
                                     return 'Tidak ada kuota';
                                 }
                                 
