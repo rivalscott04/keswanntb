@@ -178,6 +178,21 @@ class ViewPengajuan extends ViewRecord
                     $file = $data['path_file'];
                     $filePath = is_array($file) ? $file[0] : $file;
                     
+                    // Cek apakah sudah ada dokumen dengan jenis yang sama dari user yang sama untuk pengajuan ini
+                    // Jika ada, nonaktifkan dokumen lama terlebih dahulu
+                    $dokumenLama = DokumenPengajuan::where('pengajuan_id', $this->record->id)
+                        ->where('user_id', auth()->id())
+                        ->where('jenis_dokumen', $data['jenis_dokumen'])
+                        ->where('status', 'aktif')
+                        ->get();
+                    
+                    if ($dokumenLama->isNotEmpty()) {
+                        // Nonaktifkan dokumen lama
+                        foreach ($dokumenLama as $doc) {
+                            $doc->update(['status' => 'tidak_aktif']);
+                        }
+                    }
+                    
                     DokumenPengajuan::create([
                         'pengajuan_id' => $this->record->id,
                         'user_id' => auth()->id(),

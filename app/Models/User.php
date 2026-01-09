@@ -47,6 +47,7 @@ class User extends Authenticatable implements FilamentUser
             'provinsi_verified_at' => 'datetime',
             'tanggal_verifikasi' => 'datetime',
             'tanggal_berlaku' => 'datetime',
+            'tanggal_surat_permohonan' => 'date',
         ];
     }
 

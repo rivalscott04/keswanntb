@@ -16,6 +16,8 @@ class KabKota extends Model
     protected $fillable = [
         'provinsi_id',
         'nama',
+        'nama_dinas',
+        'alamat_dinas',
     ];
 
     public function provinsi(): BelongsTo

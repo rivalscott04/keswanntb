@@ -102,6 +102,11 @@ class Register extends BaseRegister
                                 Forms\Components\FileUpload::make('surat_permohonan_perusahaan')
                                     ->label('Surat Permohonan Perusahaan')
                                     ->acceptedFileTypes(['application/pdf']),
+                                Forms\Components\DatePicker::make('tanggal_surat_permohonan')
+                                    ->label('Tanggal Surat Permohonan Perusahaan')
+                                    ->required()
+                                    ->displayFormat('d/m/Y')
+                                    ->native(false),
                             ])->visible(fn($get) => $get('jenis_akun') === 'perusahaan'),
                         Forms\Components\Section::make('Data Pribadi')
                             ->schema([

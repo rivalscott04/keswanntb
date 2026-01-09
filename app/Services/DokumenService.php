@@ -114,6 +114,21 @@ class DokumenService
             // Get file size
             $fileSize = filesize($outputPath);
 
+            // Cek apakah sudah ada dokumen dengan jenis yang sama dari user yang sama untuk pengajuan ini
+            // Jika ada, nonaktifkan dokumen lama terlebih dahulu
+            $dokumenLama = DokumenPengajuan::where('pengajuan_id', $pengajuan->id)
+                ->where('user_id', $userId)
+                ->where('jenis_dokumen', $jenisDokumen)
+                ->where('status', 'aktif')
+                ->get();
+            
+            if ($dokumenLama->isNotEmpty()) {
+                // Nonaktifkan dokumen lama
+                foreach ($dokumenLama as $doc) {
+                    $doc->update(['status' => 'tidak_aktif']);
+                }
+            }
+
             // Create DokumenPengajuan record
             $dokumenPengajuan = DokumenPengajuan::create([
                 'pengajuan_id' => $pengajuan->id,
@@ -145,11 +160,45 @@ class DokumenService
             $biodataKadis = json_decode($pengaturanKadis->value);
         }
 
-        // Format tanggal
+        // Ambil tanggal approval (ketika status menjadi "disetujui")
+        // Cari dari histori pengajuan atau gunakan updated_at jika status sudah disetujui
+        $tanggalApproval = null;
+        if ($pengajuan->status === 'disetujui' || $pengajuan->status === 'selesai') {
+            // Cari dari histori pengajuan ketika status menjadi "disetujui" oleh Disnak Provinsi (urutan 4)
+            $historiApproval = \App\Models\HistoriPengajuan::where('pengajuan_id', $pengajuan->id)
+                ->where('status', 'disetujui')
+                ->whereHas('tahapVerifikasi', function($q) {
+                    $q->where('urutan', 4); // Disnak Provinsi
+                })
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            if ($historiApproval) {
+                $tanggalApproval = Carbon::parse($historiApproval->created_at);
+            } else {
+                // Fallback ke updated_at pengajuan jika histori tidak ditemukan
+                $tanggalApproval = Carbon::parse($pengajuan->updated_at);
+            }
+        }
+        
+        // Jika belum approval, gunakan tanggal sekarang (untuk preview)
+        $tanggalSurat = $tanggalApproval ?? Carbon::now();
         $tanggalSekarang = Carbon::now();
-        $tanggalSurat = $pengajuan->tanggal_surat_permohonan 
+        
+        // Hitung tanggal berlaku: 14 hari setelah approval
+        $tanggalBerlakuAwal = $tanggalSurat;
+        $tanggalBerlakuAkhir = $tanggalSurat->copy()->addDays(14);
+        
+        // Format tanggal surat permohonan
+        $tanggalSuratPermohonan = $pengajuan->tanggal_surat_permohonan 
             ? Carbon::parse($pengajuan->tanggal_surat_permohonan) 
             : $tanggalSekarang;
+        
+        // Ambil satuan dari pengajuan
+        $satuan = $pengajuan->satuan ?? 'ekor';
+        
+        // Format jumlah dengan satuan: "80 Ekor" atau "100 Kg" dll
+        $jumlahDenganSatuan = number_format($pengajuan->jumlah_ternak, 0, ',', '.') . ' ' . ucfirst($satuan);
 
         // Data dasar
         $data = [
@@ -168,8 +217,8 @@ class DokumenService
             // Informasi pengajuan
             'nomor_surat_permohonan' => $pengajuan->nomor_surat_permohonan ?? '-',
             'nomor_surat' => $pengajuan->nomor_surat_permohonan ?? '-', // Alias
-            'tanggal_surat_permohonan' => $tanggalSurat->translatedFormat('d F Y'),
-            'tanggal_surat' => $tanggalSurat->translatedFormat('d F Y'), // Alias
+            'tanggal_surat_permohonan' => $tanggalSuratPermohonan->translatedFormat('d F Y'),
+            'tanggal_surat' => $tanggalSuratPermohonan->translatedFormat('d F Y'), // Alias
             'jenis_pengajuan' => match($pengajuan->jenis_pengajuan) {
                 'antar_kab_kota' => 'Antar Kabupaten/Kota',
                 'pengeluaran' => 'Pengeluaran',
@@ -181,13 +230,13 @@ class DokumenService
             // Informasi ternak
             'jenis_ternak' => $pengajuan->jenisTernak->nama ?? '-',
             'kategori_ternak' => $pengajuan->jenisTernak->kategoriTernak->nama ?? '-',
-            'jumlah_ternak' => number_format($pengajuan->jumlah_ternak, 0, ',', '.'),
-            'jumlah' => number_format($pengajuan->jumlah_ternak, 0, ',', '.'), // Alias
+            'jumlah_ternak' => $jumlahDenganSatuan, // Format: "80 Ekor" atau "100 Kg"
+            'jumlah' => $jumlahDenganSatuan, // Alias
             'jenis_kelamin' => ucfirst($pengajuan->jenis_kelamin),
             'jeniskelamin' => ucfirst($pengajuan->jenis_kelamin), // Alias tanpa underscore (sesuai template)
             'ras_ternak' => $pengajuan->ras_ternak ?? '-',
             'ras' => $pengajuan->ras_ternak ?? '-', // Alias
-            'satuan' => $pengajuan->satuan ?? 'ekor',
+            'satuan' => ucfirst($satuan),
             
             // Lokasi asal
             'provinsi_asal' => $pengajuan->provinsiAsal->nama ?? $pengajuan->provinsi_asal ?? '-',
@@ -204,15 +253,13 @@ class DokumenService
             
             // Placeholder tambahan dari template
             'noperusahaan' => $pengajuan->user->no_nib ?? $pengajuan->user->no_npwp ?? '-', // Nomor perusahaan (NIB atau NPWP)
-            'jmlhari' => $pengajuan->tanggal_surat_permohonan 
-                ? $tanggalSurat->diffInDays($tanggalSekarang) 
-                : '-', // Jumlah hari dari tanggal surat sampai sekarang
+            'jmlhari' => $tanggalBerlakuAwal->translatedFormat('d F Y') . ' s/d ' . $tanggalBerlakuAkhir->translatedFormat('d F Y'), // Format: "9 Januari 2026 s/d 22 Januari 2026"
             
-            // Tanggal dokumen
-            'tanggal_dokumen' => $tanggalSekarang->translatedFormat('d F Y'),
-            'tanggal' => $tanggalSekarang->translatedFormat('d F Y'), // Alias
-            'tanggal_ttd' => $tanggalSekarang->translatedFormat('d F Y'),
-            'tanggal_sekarang' => $tanggalSekarang->translatedFormat('d F Y'), // Alias
+            // Tanggal dokumen (setelah approval)
+            'tanggal_dokumen' => $tanggalSurat->translatedFormat('d F Y'),
+            'tanggal' => $tanggalSurat->translatedFormat('d F Y'), // Alias
+            'tanggal_ttd' => $tanggalSurat->translatedFormat('d F Y'),
+            'tanggal_sekarang' => $tanggalSurat->translatedFormat('d F Y'), // Alias
             
             // Biodata kadis
             'nama_kadis' => $biodataKadis->nama ?? '-',
@@ -225,8 +272,8 @@ class DokumenService
         // Tambahkan data khusus berdasarkan jenis dokumen
         switch ($jenisDokumen) {
             case 'rekomendasi_keswan':
-                // Generate nomor dokumen rekomendasi
-                $data['nomor_dokumen'] = self::generateNomorDokumen($pengajuan, 'REKOM');
+                // Nomor surat dikosongkan (diisi manual setelah TTD kadis)
+                $data['nomor_dokumen'] = ''; // Kosongkan, akan diisi manual setelah TTD
                 break;
             
             case 'skkh':

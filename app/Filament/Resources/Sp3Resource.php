@@ -154,6 +154,10 @@ class Sp3Resource extends Resource
                         default => '-'
                     })
                     ->searchable(),
+                Tables\Columns\TextColumn::make('tanggal_surat_permohonan')
+                    ->label('Tanggal Surat Permohonan')
+                    ->date('d/m/Y')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('kab_kota_verified_at')
                     ->label('Status Kab/Kota')
                     ->formatStateUsing(fn($state) => $state ? 'Terverifikasi' : 'Belum Terverifikasi')

@@ -309,24 +309,42 @@ class ViewSp3 extends ViewRecord
                         default => '-'
                     };
 
+                    // Tanggal untuk template - gunakan tanggal verifikasi provinsi jika sudah ada, jika belum gunakan tanggal sekarang
+                    // Tanggal register sesuai dengan tanggal approve (tanggal verifikasi)
+                    $tanggalVerifikasi = $this->record->tanggal_verifikasi ?? $this->record->provinsi_verified_at ?? now();
+                    $tanggalBerlaku = $this->record->tanggal_berlaku;
+                    if (!$tanggalBerlaku && $tanggalVerifikasi) {
+                        $tanggalBerlaku = $tanggalVerifikasi->copy()->addYears(3);
+                    }
+
+                    // Ambil data dinas untuk tembusan berdasarkan kab/kota user
+                    $kabKota = $this->record->kabKota;
+                    $tembusan = '';
+                    if ($kabKota && $kabKota->nama_dinas && $kabKota->alamat_dinas) {
+                        $tembusan = $kabKota->nama_dinas . "\n" . $kabKota->alamat_dinas;
+                    }
+
                     $template->setValues([
-                        'nomor' => $this->record->no_sp3,
-                        'nama_perusahaan' => $this->record->nama_perusahaan,
-                        'penanggung_jawab' => $this->record->name,
+                        'nomor' => $this->record->no_sp3 ?? '-',
+                        'nama_perusahaan' => $this->record->nama_perusahaan ?? '-',
+                        'penanggung_jawab' => $this->record->name ?? '-',
                         'bidang_usaha' => $bidangUsaha,
-                        'nomor_nib' => $this->record->no_nib,
-                        'nomor_npwp' => $this->record->no_npwp,
-                        'alamat' => str($this->record->alamat)->title()->toString() . ' ' . $this->record->kabKota?->nama,
-                        'telpon' => $this->record->telepon,
-                        'nomor_register' => $this->record->no_register,
-                        'tanggal_register' => $this->record->tanggal_verifikasi?->translatedFormat('d F Y'),
-                        'berlaku_hingga' => $this->record->tanggal_berlaku?->translatedFormat('d F Y'),
-                        'tanggal_ttd' => $this->record->tanggal_verifikasi?->translatedFormat('d F Y'),
-                        'nama_kadis' => $biodataKadis->nama,
-                        'pangkat_kadis' => $biodataKadis->jabatan,
-                        'nip_kadis' => $biodataKadis->nip,
-                        'kabupaten' => $this->record->kabKota?->nama,
-                        'kel_desa' => $this->record->desa
+                        'nomor_nib' => $this->record->no_nib ?? '-',
+                        'nomor_tanda_daftar_perusahaan' => $this->record->no_nib ?? '-', // NIB untuk nomor tanda daftar perusahaan
+                        'nomor_surat_izin_usaha' => $this->record->no_nib ?? $this->record->no_npwp ?? '-', // Surat Izin Usaha (bisa NIB atau NPWP)
+                        'nomor_npwp' => $this->record->no_npwp ?? '-',
+                        'alamat' => str($this->record->alamat ?? '')->title()->toString() . ' ' . ($this->record->kabKota?->nama ?? ''),
+                        'telpon' => $this->record->telepon ?? '-',
+                        'nomor_register' => $this->record->no_register ?? '-',
+                        'tanggal_register' => $tanggalVerifikasi ? $tanggalVerifikasi->translatedFormat('d F Y') : '-',
+                        'berlaku_hingga' => $tanggalBerlaku ? $tanggalBerlaku->translatedFormat('d F Y') : '-',
+                        'tanggal_ttd' => $tanggalVerifikasi ? $tanggalVerifikasi->translatedFormat('d F Y') : '-',
+                        'nama_kadis' => $biodataKadis->nama ?? '-',
+                        'pangkat_kadis' => $biodataKadis->jabatan ?? '-',
+                        'nip_kadis' => $biodataKadis->nip ?? '-',
+                        'kabupaten' => $this->record->kabKota?->nama ?? '-',
+                        'kel_desa' => $this->record->desa ?? '-',
+                        'tembusan' => $tembusan
                     ]);
 
                     $outputPath = storage_path('template/hasil-sp3.docx');
