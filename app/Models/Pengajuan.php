@@ -112,7 +112,33 @@ class Pengajuan extends Model
         } elseif ($this->jenis_pengajuan === 'pemasukan') {
             $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pemasukan', $this->kab_kota_tujuan_id);
         } elseif ($this->jenis_pengajuan === 'antar_kab_kota') {
-            $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pengeluaran');
+            // Untuk antar kab/kota, cek apakah perlu kuota pengeluaran dari asal atau pemasukan ke tujuan
+            $kabKotaAsal = $this->kabKotaAsal;
+            $kabKotaTujuan = $this->kabKotaTujuan;
+            
+            $kabKotaLombok = [
+                'Kota Mataram',
+                'Kab. Lombok Barat', 
+                'Kab. Lombok Tengah',
+                'Kab. Lombok Timur',
+                'Kab. Lombok Utara'
+            ];
+            
+            $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
+            $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
+            
+            // Cek kuota pengeluaran dari asal (jika asal dari Lombok)
+            if ($isLombokAsal) {
+                $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pengeluaran');
+            }
+            
+            // Cek kuota pemasukan ke tujuan (jika tujuan ke Lombok dan asal bukan Lombok)
+            if (!$isLombokAsal && $isLombokTujuan && $this->kab_kota_tujuan_id) {
+                $perluKuotaPemasukan = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pemasukan', $this->kab_kota_tujuan_id);
+                if ($perluKuotaPemasukan) {
+                    $perluKuota = true;
+                }
+            }
         }
 
         // Jika tidak perlu kuota, return nilai besar untuk menunjukkan tidak ada batasan
@@ -151,7 +177,28 @@ class Pengajuan extends Model
                 );
             } else {
                 // Kuota pengeluaran dari kab/kota di Sumbawa (TIDAK akan dikurangi)
-                // Return nilai besar untuk menunjukkan tidak ada batasan
+                // Tapi cek kuota pemasukan ke tujuan jika tujuan di Lombok
+                if ($isLombokTujuan && $this->kab_kota_tujuan_id) {
+                    // Cek apakah perlu kuota pemasukan ke Lombok
+                    $perluKuotaPemasukan = \App\Models\PenggunaanKuota::isKuotaRequired(
+                        $this->jenis_ternak_id, 
+                        'pemasukan', 
+                        $this->kab_kota_tujuan_id
+                    );
+                    
+                    if ($perluKuotaPemasukan) {
+                        // Kuota pemasukan ke Lombok: per kab/kota (spesifik)
+                        return \App\Models\PenggunaanKuota::getKuotaTersisa(
+                            $this->tahun_pengajuan,
+                            $this->jenis_ternak_id,
+                            $this->kab_kota_tujuan_id,
+                            $this->jenis_kelamin,
+                            'pemasukan',
+                            'Lombok'
+                        );
+                    }
+                }
+                // Jika tujuan bukan Lombok atau tidak perlu kuota pemasukan, return nilai besar
                 return PHP_INT_MAX;
             }
         } else {
@@ -203,17 +250,9 @@ class Pengajuan extends Model
 
     public function getIsKuotaPenuhAttribute()
     {
-        // Jika tidak perlu kuota, selalu return false (tidak pernah penuh)
-        $perluKuota = false;
-        if ($this->jenis_pengajuan === 'pengeluaran') {
-            $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pengeluaran');
-        } elseif ($this->jenis_pengajuan === 'pemasukan') {
-            $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pemasukan', $this->kab_kota_tujuan_id);
-        } elseif ($this->jenis_pengajuan === 'antar_kab_kota') {
-            $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($this->jenis_ternak_id, 'pengeluaran');
-        }
-
-        if (!$perluKuota) {
+        // Gunakan logika yang sama dengan getKuotaTersediaAttribute untuk konsistensi
+        // Jika kuota_tersedia adalah PHP_INT_MAX, berarti tidak ada batasan (tidak pernah penuh)
+        if ($this->kuota_tersedia > 1000000000000) {
             return false;
         }
 

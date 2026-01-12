@@ -303,7 +303,33 @@ class ViewPengajuan extends ViewRecord
                                 } elseif ($record->jenis_pengajuan === 'pemasukan') {
                                     $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pemasukan', $record->kab_kota_tujuan_id);
                                 } elseif ($record->jenis_pengajuan === 'antar_kab_kota') {
-                                    $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pengeluaran');
+                                    // Untuk antar kab/kota, cek apakah perlu kuota pengeluaran dari asal atau pemasukan ke tujuan
+                                    $kabKotaAsal = $record->kabKotaAsal;
+                                    $kabKotaTujuan = $record->kabKotaTujuan;
+                                    
+                                    $kabKotaLombok = [
+                                        'Kota Mataram',
+                                        'Kab. Lombok Barat', 
+                                        'Kab. Lombok Tengah',
+                                        'Kab. Lombok Timur',
+                                        'Kab. Lombok Utara'
+                                    ];
+                                    
+                                    $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
+                                    $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
+                                    
+                                    // Cek kuota pengeluaran dari asal (jika asal dari Lombok)
+                                    if ($isLombokAsal) {
+                                        $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pengeluaran');
+                                    }
+                                    
+                                    // Cek kuota pemasukan ke tujuan (jika tujuan ke Lombok dan asal bukan Lombok)
+                                    if (!$isLombokAsal && $isLombokTujuan && $record->kab_kota_tujuan_id) {
+                                        $perluKuotaPemasukan = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pemasukan', $record->kab_kota_tujuan_id);
+                                        if ($perluKuotaPemasukan) {
+                                            $perluKuota = true;
+                                        }
+                                    }
                                 }
                                 
                                 if (!$perluKuota) {
@@ -314,7 +340,9 @@ class ViewPengajuan extends ViewRecord
                                     return 'Tidak ada kuota';
                                 }
                                 
-                                // Untuk pengajuan antar kab/kota, tampilkan kuota pengeluaran dari asal
+                                // Untuk pengajuan antar kab/kota, tampilkan kuota sesuai dengan logika:
+                                // - Jika asal dari Lombok: kuota pengeluaran dari Lombok
+                                // - Jika asal dari Sumbawa dan tujuan ke Lombok: kuota pemasukan ke tujuan
                                 $kabKotaAsal = $record->kabKotaAsal;
                                 $kabKotaTujuan = $record->kabKotaTujuan;
                                 
@@ -328,6 +356,7 @@ class ViewPengajuan extends ViewRecord
                                 ];
                                 
                                 $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
+                                $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
                                 
                                 // Jika kuota_tersedia adalah PHP_INT_MAX atau sangat besar, berarti tidak ada batasan kuota
                                 // PHP_INT_MAX biasanya 9.223.372.036.854.775.807 (64-bit) atau 2.147.483.647 (32-bit)
@@ -336,11 +365,29 @@ class ViewPengajuan extends ViewRecord
                                     if ($record->jenis_pengajuan === 'pengeluaran' && !$isLombokAsal && $kabKotaAsal) {
                                         return 'Bebas keluar (Pengeluaran - ' . $kabKotaAsal->nama . ')';
                                     }
+                                    if ($record->jenis_pengajuan === 'antar_kab_kota' && !$isLombokAsal && !$isLombokTujuan) {
+                                        return 'Bebas (Antar Kab/Kota)';
+                                    }
                                     return 'Tidak ada kuota';
                                 }
                                 
                                 $kuotaFormatted = $this->formatAngkaKuota($record->kuota_tersedia);
                                 
+                                // Untuk pengajuan antar kab/kota
+                                if ($record->jenis_pengajuan === 'antar_kab_kota') {
+                                    if ($isLombokAsal) {
+                                        // Dari Lombok: tampilkan kuota pengeluaran
+                                        return $kuotaFormatted . ' ekor (Pengeluaran - Pulau Lombok)';
+                                    } elseif ($isLombokTujuan && $kabKotaTujuan) {
+                                        // Dari Sumbawa ke Lombok: tampilkan kuota pemasukan ke tujuan
+                                        return $kuotaFormatted . ' ekor (Pemasukan - ' . $kabKotaTujuan->nama . ')';
+                                    } else {
+                                        // Dari Sumbawa ke Sumbawa: tampilkan kuota pengeluaran dari asal (jika ada)
+                                        return $kuotaFormatted . ' ekor (Pengeluaran - ' . ($kabKotaAsal ? $kabKotaAsal->nama : 'Tidak Diketahui') . ')';
+                                    }
+                                }
+                                
+                                // Untuk pengajuan pengeluaran/pemasukan biasa
                                 if ($isLombokAsal) {
                                     return $kuotaFormatted . ' ekor (Pengeluaran - Pulau Lombok)';
                                 } else {
