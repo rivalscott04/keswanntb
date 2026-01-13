@@ -114,18 +114,28 @@ class DokumenService
             // Get file size
             $fileSize = filesize($outputPath);
 
-            // Cek apakah sudah ada dokumen dengan jenis yang sama dari user yang sama untuk pengajuan ini
-            // Jika ada, nonaktifkan dokumen lama terlebih dahulu
+            // PENTING: Hanya nonaktifkan dokumen yang di-generate dari user yang SAMA
+            // JANGAN PERNAH nonaktifkan dokumen yang di-upload manual (keterangan tidak mengandung "di-generate otomatis")
+            // JANGAN PERNAH nonaktifkan dokumen dari user lain
             $dokumenLama = DokumenPengajuan::where('pengajuan_id', $pengajuan->id)
-                ->where('user_id', $userId)
+                ->where('user_id', $userId) // HANYA dari user yang sama
                 ->where('jenis_dokumen', $jenisDokumen)
                 ->where('status', 'aktif')
+                ->where(function($q) {
+                    // Hanya dokumen yang di-generate (bukan manual)
+                    $q->where('keterangan', 'like', '%di-generate otomatis%')
+                      ->orWhereNull('keterangan'); // Jika null, kemungkinan di-generate juga
+                })
                 ->get();
             
             if ($dokumenLama->isNotEmpty()) {
-                // Nonaktifkan dokumen lama
+                // Nonaktifkan dokumen lama yang di-generate dari user yang sama
+                // INI AMAN karena hanya menonaktifkan dokumen generate dari user yang sama
                 foreach ($dokumenLama as $doc) {
-                    $doc->update(['status' => 'tidak_aktif']);
+                    // Double check: pastikan ini bukan dokumen manual
+                    if (str_contains($doc->keterangan ?? '', 'di-generate otomatis') || empty($doc->keterangan)) {
+                        $doc->update(['status' => 'tidak_aktif']);
+                    }
                 }
             }
 
