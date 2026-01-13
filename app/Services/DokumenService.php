@@ -273,10 +273,16 @@ class DokumenService
             
             // Biodata kadis
             'nama_kadis' => $biodataKadis->nama ?? '-',
+            'namakadis' => $biodataKadis->nama ?? '-', // Alias tanpa underscore
             'pangkat_kadis' => $biodataKadis->jabatan ?? '-',
             'jabatan_kadis' => $biodataKadis->jabatan ?? '-', // Alias
+            'golongan_kadis' => $biodataKadis->golongan ?? $biodataKadis->jabatan ?? '-', // Golongan kadis (jika ada field terpisah, jika tidak ambil dari jabatan)
+            'golongankadis' => $biodataKadis->golongan ?? $biodataKadis->jabatan ?? '-', // Alias tanpa underscore
             'nip_kadis' => $biodataKadis->nip ?? '-',
+            'nipkadis' => $biodataKadis->nip ?? '-', // Alias tanpa underscore
             'nip' => $biodataKadis->nip ?? '-', // Alias
+            'nip_kadis_formatted' => $biodataKadis->nip ? 'NIP. ' . $biodataKadis->nip : '-', // Format dengan "NIP. " di depan
+            'nipkadis_formatted' => $biodataKadis->nip ? 'NIP. ' . $biodataKadis->nip : '-', // Alias tanpa underscore dengan format
         ];
 
         // Tambahkan data khusus berdasarkan jenis dokumen
