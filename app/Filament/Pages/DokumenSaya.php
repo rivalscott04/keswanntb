@@ -33,6 +33,17 @@ class DokumenSaya extends Page implements HasTable
         // Basis query: hanya dokumen aktif
         $query = DokumenPengajuan::query()->aktif();
 
+        // Filter dokumen berdasarkan akses:
+        // - Dokumen draft (di-generate otomatis) hanya bisa dilihat Disnak Provinsi
+        // - Dokumen manual (di-upload setelah TTD) bisa dilihat semua yang berhak
+        if (!$user->is_admin && $user->wewenang->nama !== 'Disnak Provinsi') {
+            // Untuk user selain Admin dan Disnak Provinsi, sembunyikan dokumen draft
+            $query->where(function ($q) {
+                $q->whereNull('keterangan')
+                  ->orWhere('keterangan', 'not like', '%di-generate otomatis%');
+            });
+        }
+
         // Terapkan pembatasan keterkaitan pengajuan seperti di ListDokumenPengajuans,
         // namun di sini kita hanya ingin dokumen yang DIUPLOAD OLEH AKUN LAIN
         // (user_id != auth()->id()).

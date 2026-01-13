@@ -122,4 +122,21 @@ class DokumenPengajuan extends Model
             ->orderBy('jenis_dokumen')
             ->get();
     }
+
+    /**
+     * Cek apakah dokumen di-generate otomatis (draft)
+     * Dokumen di-generate otomatis memiliki keterangan yang mengandung "di-generate otomatis"
+     */
+    public function isDraft(): bool
+    {
+        return $this->keterangan && str_contains(strtolower($this->keterangan), 'di-generate otomatis');
+    }
+
+    /**
+     * Cek apakah dokumen di-upload manual (setelah TTD)
+     */
+    public function isManualUpload(): bool
+    {
+        return !$this->isDraft();
+    }
 }

@@ -16,8 +16,23 @@ class DokumenPengajuanRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
+        $user = auth()->user();
+        
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->aktif())
+            ->modifyQueryUsing(function ($query) use ($user) {
+                $query->aktif();
+                
+                // Filter dokumen berdasarkan akses:
+                // - Dokumen draft (di-generate otomatis) hanya bisa dilihat Disnak Provinsi
+                // - Dokumen manual (di-upload setelah TTD) bisa dilihat semua yang berhak
+                if (!$user->is_admin && $user->wewenang->nama !== 'Disnak Provinsi') {
+                    // Untuk user selain Admin dan Disnak Provinsi, sembunyikan dokumen draft
+                    $query->where(function ($q) {
+                        $q->whereNull('keterangan')
+                          ->orWhere('keterangan', 'not like', '%di-generate otomatis%');
+                    });
+                }
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('jenis_dokumen')
                     ->label('Jenis Dokumen')

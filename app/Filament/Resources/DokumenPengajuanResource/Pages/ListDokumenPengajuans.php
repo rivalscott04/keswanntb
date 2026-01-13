@@ -28,6 +28,17 @@ class ListDokumenPengajuans extends ListRecords
         // sehingga dokumen dari akun lain akan dipindahkan ke menu "Dokumen Saya".
         $query = $query->where('user_id', $user->id);
 
+        // Filter dokumen berdasarkan akses:
+        // - Dokumen draft (di-generate otomatis) hanya bisa dilihat Disnak Provinsi
+        // - Dokumen manual (di-upload setelah TTD) bisa dilihat semua yang berhak
+        if (!$user->is_admin && $user->wewenang->nama !== 'Disnak Provinsi') {
+            // Untuk user selain Admin dan Disnak Provinsi, sembunyikan dokumen draft
+            $query->where(function ($q) {
+                $q->whereNull('keterangan')
+                  ->orWhere('keterangan', 'not like', '%di-generate otomatis%');
+            });
+        }
+
         // Batasi juga berdasarkan keterkaitan pengajuan, mengikuti aturan lama:
 
         // Jika user adalah Pengguna (pengusaha), hanya dari pengajuan miliknya

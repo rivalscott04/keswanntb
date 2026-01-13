@@ -446,16 +446,35 @@ class ViewPengajuan extends ViewRecord
                         TextEntry::make('dokumen_pengajuan')
                             ->label('Dokumen')
                             ->formatStateUsing(function ($record) {
+                                $user = auth()->user();
                                 $dokumen = $record->dokumenPengajuan()->aktif()->get();
+                                
+                                // Filter dokumen berdasarkan akses:
+                                // - Dokumen draft (di-generate otomatis) hanya bisa dilihat Disnak Provinsi
+                                // - Dokumen manual (di-upload setelah TTD) bisa dilihat semua yang berhak
+                                $dokumen = $dokumen->filter(function ($doc) use ($user) {
+                                    if ($doc->isDraft()) {
+                                        // Dokumen draft hanya untuk Disnak Provinsi atau Admin
+                                        return $user->is_admin || $user->wewenang->nama === 'Disnak Provinsi';
+                                    }
+                                    // Dokumen manual bisa dilihat semua yang berhak
+                                    return true;
+                                });
+                                
                                 if ($dokumen->isEmpty()) {
                                     return 'Belum ada dokumen yang diupload';
                                 }
                                 
                                 $html = '<div class="space-y-2">';
                                 foreach ($dokumen as $doc) {
+                                    $isDraft = $doc->isDraft();
                                     $html .= '<div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">';
                                     $html .= '<div>';
-                                    $html .= '<span class="font-medium">' . $doc->nama_file_display . '</span><br>';
+                                    $html .= '<span class="font-medium">' . $doc->nama_file_display . '</span>';
+                                    if ($isDraft) {
+                                        $html .= ' <span class="text-xs text-yellow-600 dark:text-yellow-400">(Draft)</span>';
+                                    }
+                                    $html .= '<br>';
                                     $html .= '<span class="text-sm text-gray-500">Uploaded by: ' . $doc->user->name . '</span>';
                                     $html .= '</div>';
                                     $html .= '<a href="' . $doc->url_download . '" target="_blank" class="text-primary-600 dark:text-primary-400 hover:underline">Download</a>';
