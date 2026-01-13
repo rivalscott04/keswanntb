@@ -196,8 +196,9 @@ class DokumenService
         $tanggalSekarang = Carbon::now();
         
         // Hitung tanggal berlaku: 14 hari setelah approval
+        $jumlahHariBerlaku = 14; // Jumlah hari berlaku dokumen
         $tanggalBerlakuAwal = $tanggalSurat;
-        $tanggalBerlakuAkhir = $tanggalSurat->copy()->addDays(14);
+        $tanggalBerlakuAkhir = $tanggalSurat->copy()->addDays($jumlahHariBerlaku);
         
         // Format tanggal surat permohonan
         $tanggalSuratPermohonan = $pengajuan->tanggal_surat_permohonan 
@@ -264,6 +265,8 @@ class DokumenService
             // Placeholder tambahan dari template
             'noperusahaan' => $pengajuan->user->no_nib ?? $pengajuan->user->no_npwp ?? '-', // Nomor perusahaan (NIB atau NPWP)
             'jmlhari' => $tanggalBerlakuAwal->translatedFormat('d F Y') . ' s/d ' . $tanggalBerlakuAkhir->translatedFormat('d F Y'), // Format: "9 Januari 2026 s/d 22 Januari 2026"
+            'Sjmlhari' => (string)$jumlahHariBerlaku, // Jumlah hari berlaku (untuk placeholder "(Sjmlhari hari sejak di terbitkan)")
+            'hari_berlaku' => (string)$jumlahHariBerlaku, // Alias untuk Sjmlhari
             
             // Tanggal dokumen (setelah approval)
             'tanggal_dokumen' => $tanggalSurat->translatedFormat('d F Y'),
