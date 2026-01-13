@@ -171,34 +171,35 @@ class DokumenService
         }
 
         // Ambil tanggal approval (ketika status menjadi "disetujui")
-        // Cari dari histori pengajuan atau gunakan updated_at jika status sudah disetujui
-        $tanggalApproval = null;
-        if ($pengajuan->status === 'disetujui' || $pengajuan->status === 'selesai') {
-            // Cari dari histori pengajuan ketika status menjadi "disetujui" oleh Disnak Provinsi (urutan 4)
-            $historiApproval = \App\Models\HistoriPengajuan::where('pengajuan_id', $pengajuan->id)
-                ->where('status', 'disetujui')
-                ->whereHas('tahapVerifikasi', function($q) {
-                    $q->where('urutan', 4); // Disnak Provinsi
-                })
-                ->orderBy('created_at', 'desc')
-                ->first();
-            
-            if ($historiApproval) {
-                $tanggalApproval = Carbon::parse($historiApproval->created_at);
-            } else {
-                // Fallback ke updated_at pengajuan jika histori tidak ditemukan
-                $tanggalApproval = Carbon::parse($pengajuan->updated_at);
-            }
+        // Selalu cari dari histori pengajuan (tanpa tergantung status akhir),
+        // fallback ke updated_at jika histori tidak ditemukan.
+        $historiApproval = \App\Models\HistoriPengajuan::where('pengajuan_id', $pengajuan->id)
+            ->where('status', 'disetujui')
+            ->whereHas('tahapVerifikasi', function($q) {
+                $q->where('urutan', 4); // Disnak Provinsi
+            })
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($historiApproval) {
+            $tanggalApproval = Carbon::parse($historiApproval->created_at);
+        } else {
+            // Jika belum pernah di-approve, gunakan updated_at sebagai fallback,
+            // dan kalau itu juga kosong, gunakan tanggal sekarang (di bawah).
+            $tanggalApproval = $pengajuan->updated_at
+                ? Carbon::parse($pengajuan->updated_at)
+                : null;
         }
         
         // Jika belum approval, gunakan tanggal sekarang (untuk preview)
         $tanggalSurat = $tanggalApproval ?? Carbon::now();
         $tanggalSekarang = Carbon::now();
         
-        // Hitung tanggal berlaku: 14 hari setelah approval
-        $jumlahHariBerlaku = 14; // Jumlah hari berlaku dokumen
+        // Hitung tanggal berlaku: 14 hari kalender termasuk hari di-ACC
+        $jumlahHariBerlaku = 14; // Jumlah hari berlaku dokumen (misal: 13 s/d 26 = 14 hari)
         $tanggalBerlakuAwal = $tanggalSurat;
-        $tanggalBerlakuAkhir = $tanggalSurat->copy()->addDays($jumlahHariBerlaku);
+        // Karena hari pertama adalah tanggal approval, tanggal akhir = approval + (jumlahHariBerlaku - 1)
+        $tanggalBerlakuAkhir = $tanggalSurat->copy()->addDays($jumlahHariBerlaku - 1);
         
         // Format tanggal surat permohonan
         $tanggalSuratPermohonan = $pengajuan->tanggal_surat_permohonan 
