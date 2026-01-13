@@ -225,8 +225,8 @@ class DokumenService
             'no_npwp' => $pengajuan->user->no_npwp ?? '-',
             
             // Informasi pengajuan
-            'nomor_surat_permohonan' => $pengajuan->nomor_surat_permohonan ?? '-',
-            'nomor_surat' => $pengajuan->nomor_surat_permohonan ?? '-', // Alias
+            'nomor_surat_permohonan' => '', // Dikosongkan, akan diisi manual
+            'nomor_surat' => '', // Alias - dikosongkan, akan diisi manual
             'tanggal_surat_permohonan' => $tanggalSuratPermohonan->translatedFormat('d F Y'),
             'tanggal_surat' => $tanggalSuratPermohonan->translatedFormat('d F Y'), // Alias
             'jenis_pengajuan' => match($pengajuan->jenis_pengajuan) {
