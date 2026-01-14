@@ -103,8 +103,13 @@ class KuotaResource extends Resource
                         
                         // Jika jenis ternak adalah Bibit Sapi, filter berdasarkan pulau yang dipilih
                         if ($isBibitSapi) {
+                            // Jika pulau Lombok dan pengeluaran, tidak perlu pilih kab/kota (global)
+                            if ($pulau === 'Lombok' && $jenisKuota === 'pengeluaran') {
+                                return [];
+                            }
+                            
                             if ($pulau === 'Lombok') {
-                                // Jika pulau Lombok, tampilkan hanya kab/kota Lombok
+                                // Jika pulau Lombok dan pemasukan, tampilkan hanya kab/kota Lombok
                                 return \App\Models\KabKota::whereIn('nama', $kabKotaLombok)
                                     ->pluck('nama', 'id');
                             } elseif ($pulau === 'Sumbawa') {
@@ -142,7 +147,12 @@ class KuotaResource extends Resource
                             $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
                         }
                         
-                        // Jika Bibit Sapi, selalu tampilkan field kab/kota
+                        // Jika Bibit Sapi dan pengeluaran di Lombok, jangan tampilkan (global)
+                        if ($isBibitSapi && $pulau === 'Lombok' && $jenisKuota === 'pengeluaran') {
+                            return false;
+                        }
+                        
+                        // Jika Bibit Sapi, tampilkan untuk pemasukan atau Sumbawa
                         if ($isBibitSapi) {
                             return true;
                         }
@@ -164,7 +174,12 @@ class KuotaResource extends Resource
                             $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
                         }
                         
-                        // Jika Bibit Sapi, selalu required
+                        // Jika Bibit Sapi dan pengeluaran di Lombok, tidak required (global)
+                        if ($isBibitSapi && $pulau === 'Lombok' && $jenisKuota === 'pengeluaran') {
+                            return false;
+                        }
+                        
+                        // Jika Bibit Sapi, required untuk pemasukan atau Sumbawa
                         if ($isBibitSapi) {
                             return true;
                         }
@@ -188,6 +203,9 @@ class KuotaResource extends Resource
                         }
                         
                         if ($isBibitSapi) {
+                            if ($pulau === 'Lombok' && $jenisKuota === 'pengeluaran') {
+                                return 'Kuota pengeluaran Bibit Sapi dari Pulau Lombok adalah global (tidak perlu pilih kab/kota)';
+                            }
                             if ($pulau === 'Lombok') {
                                 return 'Pilih kab/kota di Pulau Lombok untuk kuota Bibit Sapi';
                             } elseif ($pulau === 'Sumbawa') {

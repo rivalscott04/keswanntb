@@ -59,18 +59,49 @@ class KuotaPerKabKotaWidget extends BaseWidget
                     ->pluck('kab_kota_id')
                     ->toArray();
 
-                // Cek apakah ada kuota global Lombok (untuk pengeluaran)
-                $hasLombokGlobalQuota = (clone $baseKuotaQuery)
-                    ->whereNull('kab_kota_id')
-                    ->where('pulau', 'Lombok')
-                    ->where('jenis_kuota', 'pengeluaran')
-                    ->exists();
-                
-                // Jika ada kuota global Lombok, tambahkan semua kab/kota Lombok
+                // Daftar kab/kota di Pulau Lombok
                 $kabKotaLombok = ['Kota Mataram', 'Kab. Lombok Barat', 'Kab. Lombok Tengah', 'Kab. Lombok Timur', 'Kab. Lombok Utara'];
-                if ($hasLombokGlobalQuota) {
-                    $lombokKabKotaIds = KabKota::whereIn('nama', $kabKotaLombok)->pluck('id')->toArray();
-                    $kabKotaIds = array_unique(array_merge($kabKotaIds, $lombokKabKotaIds));
+                $lombokKabKotaIds = KabKota::whereIn('nama', $kabKotaLombok)->pluck('id')->toArray();
+                
+                // Cek apakah jenis ternak adalah Bibit Sapi
+                $isBibitSapi = false;
+                if ($jenisTernakId) {
+                    $jenisTernak = JenisTernak::find($jenisTernakId);
+                    $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
+                }
+                
+                if ($isBibitSapi) {
+                    // Untuk Bibit Sapi: cari kuota per kab/kota Lombok
+                    $lombokKabKotaWithQuota = (clone $baseKuotaQuery)
+                        ->whereIn('kab_kota_id', $lombokKabKotaIds)
+                        ->where('pulau', 'Lombok')
+                        ->where('jenis_kuota', 'pengeluaran')
+                        ->distinct()
+                        ->pluck('kab_kota_id')
+                        ->toArray();
+                    
+                    if (!empty($lombokKabKotaWithQuota)) {
+                        $kabKotaIds = array_unique(array_merge($kabKotaIds, $lombokKabKotaWithQuota));
+                    }
+                } else {
+                    // Untuk jenis ternak lain (misalnya Sapi Pedaging): cari kuota global Lombok
+                    $hasLombokGlobalQuota = (clone $baseKuotaQuery)
+                        ->whereNull('kab_kota_id')
+                        ->where('pulau', 'Lombok')
+                        ->where('jenis_kuota', 'pengeluaran')
+                        ->exists();
+                    
+                    // Cek juga kuota per kab/kota Lombok (untuk kompatibilitas data lama)
+                    $hasLombokPerKabKotaQuota = (clone $baseKuotaQuery)
+                        ->whereIn('kab_kota_id', $lombokKabKotaIds)
+                        ->where('pulau', 'Lombok')
+                        ->where('jenis_kuota', 'pengeluaran')
+                        ->exists();
+                    
+                    // Jika ada kuota global Lombok ATAU kuota per kab/kota Lombok, tambahkan semua kab/kota Lombok
+                    if ($hasLombokGlobalQuota || $hasLombokPerKabKotaQuota) {
+                        $kabKotaIds = array_unique(array_merge($kabKotaIds, $lombokKabKotaIds));
+                    }
                 }
 
                 // Jika ada kab/kota dengan kuota, tampilkan hanya yang memiliki kuota
@@ -205,21 +236,63 @@ class KuotaPerKabKotaWidget extends BaseWidget
                         $isLombok = in_array($record->nama ?? '', $kabKotaLombok);
                         
                         if ($isLombok) {
-                            // Untuk Lombok, gunakan kuota global (kab_kota_id = null, pulau = 'Lombok')
-                            $query = Kuota::where('tahun', $tahun)
-                                ->where('jenis_kuota', 'pengeluaran')
-                                ->whereNull('kab_kota_id')
-                                ->where('pulau', 'Lombok');
-                            
+                            // Cek apakah jenis ternak adalah Bibit Sapi
+                            $isBibitSapi = false;
                             if ($jenisTernakId) {
-                                $query->where('jenis_ternak_id', $jenisTernakId);
-                            }
-                            if ($jenisKelamin) {
-                                $query->where('jenis_kelamin', $jenisKelamin);
+                                $jenisTernak = \App\Models\JenisTernak::find($jenisTernakId);
+                                $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
                             }
                             
-                            $kuota = $query->sum('kuota');
-                            return number_format($kuota, 0, ',', '.') . ' *';
+                            if ($isBibitSapi) {
+                                // Untuk Bibit Sapi di Lombok: cari kuota per kab/kota
+                                $queryPerKabKota = Kuota::where('tahun', $tahun)
+                                    ->where('jenis_kuota', 'pengeluaran')
+                                    ->where('kab_kota_id', $record->id)
+                                    ->where('pulau', 'Lombok')
+                                    ->where('jenis_ternak_id', $jenisTernakId);
+                                
+                                if ($jenisKelamin) {
+                                    $queryPerKabKota->where('jenis_kelamin', $jenisKelamin);
+                                }
+                                
+                                $kuotaPerKabKota = $queryPerKabKota->sum('kuota');
+                                return number_format($kuotaPerKabKota, 0, ',', '.');
+                            } else {
+                                // Untuk jenis ternak lain (misalnya Sapi Pedaging): cari kuota global
+                                $queryGlobal = Kuota::where('tahun', $tahun)
+                                    ->where('jenis_kuota', 'pengeluaran')
+                                    ->whereNull('kab_kota_id')
+                                    ->where('pulau', 'Lombok');
+                                
+                                if ($jenisTernakId) {
+                                    $queryGlobal->where('jenis_ternak_id', $jenisTernakId);
+                                }
+                                if ($jenisKelamin) {
+                                    $queryGlobal->where('jenis_kelamin', $jenisKelamin);
+                                }
+                                
+                                $kuotaGlobal = $queryGlobal->sum('kuota');
+                                
+                                // Jika tidak ada kuota global dan tidak ada filter jenis ternak, 
+                                // coba cari kuota per kab/kota (untuk kompatibilitas data lama)
+                                if ($kuotaGlobal == 0 && !$jenisTernakId) {
+                                    $queryPerKabKota = Kuota::where('tahun', $tahun)
+                                        ->where('jenis_kuota', 'pengeluaran')
+                                        ->where('kab_kota_id', $record->id)
+                                        ->where('pulau', 'Lombok');
+                                    
+                                    if ($jenisKelamin) {
+                                        $queryPerKabKota->where('jenis_kelamin', $jenisKelamin);
+                                    }
+                                    
+                                    $kuotaPerKabKota = $queryPerKabKota->sum('kuota');
+                                    if ($kuotaPerKabKota > 0) {
+                                        return number_format($kuotaPerKabKota, 0, ',', '.') . ' *';
+                                    }
+                                }
+                                
+                                return number_format($kuotaGlobal, 0, ',', '.') . ' *';
+                            }
                         } else {
                             $query = Kuota::where('tahun', $tahun)
                                 ->where('jenis_kuota', 'pengeluaran')
@@ -254,19 +327,62 @@ class KuotaPerKabKotaWidget extends BaseWidget
                         $isLombok = in_array($record->nama ?? '', $kabKotaLombok);
                         
                         if ($isLombok) {
-                            $query = PenggunaanKuota::where('tahun', $tahun)
-                                ->where('jenis_penggunaan', 'pengeluaran')
-                                ->where('pulau', 'Lombok');
-                            
+                            // Cek apakah jenis ternak adalah Bibit Sapi
+                            $isBibitSapi = false;
                             if ($jenisTernakId) {
-                                $query->where('jenis_ternak_id', $jenisTernakId);
-                            }
-                            if ($jenisKelamin) {
-                                $query->where('jenis_kelamin', $jenisKelamin);
+                                $jenisTernak = \App\Models\JenisTernak::find($jenisTernakId);
+                                $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
                             }
                             
-                            $terpakai = $query->sum('jumlah_digunakan');
-                            return number_format($terpakai, 0, ',', '.') . ' *';
+                            if ($isBibitSapi) {
+                                // Untuk Bibit Sapi di Lombok: hitung terpakai per kab/kota
+                                $queryPerKabKota = PenggunaanKuota::where('tahun', $tahun)
+                                    ->where('jenis_penggunaan', 'pengeluaran')
+                                    ->where('kab_kota_id', $record->id)
+                                    ->where('pulau', 'Lombok')
+                                    ->where('jenis_ternak_id', $jenisTernakId);
+                                
+                                if ($jenisKelamin) {
+                                    $queryPerKabKota->where('jenis_kelamin', $jenisKelamin);
+                                }
+                                
+                                $terpakaiPerKabKota = $queryPerKabKota->sum('jumlah_digunakan');
+                                return number_format($terpakaiPerKabKota, 0, ',', '.');
+                            } else {
+                                // Untuk jenis ternak lain: hitung terpakai global
+                                $queryGlobal = PenggunaanKuota::where('tahun', $tahun)
+                                    ->where('jenis_penggunaan', 'pengeluaran')
+                                    ->where('pulau', 'Lombok');
+                                
+                                if ($jenisTernakId) {
+                                    $queryGlobal->where('jenis_ternak_id', $jenisTernakId);
+                                }
+                                if ($jenisKelamin) {
+                                    $queryGlobal->where('jenis_kelamin', $jenisKelamin);
+                                }
+                                
+                                $terpakaiGlobal = $queryGlobal->sum('jumlah_digunakan');
+                                
+                                // Jika tidak ada penggunaan global dan tidak ada filter jenis ternak,
+                                // coba cari per kab/kota (untuk kompatibilitas)
+                                if ($terpakaiGlobal == 0 && !$jenisTernakId) {
+                                    $queryPerKabKota = PenggunaanKuota::where('tahun', $tahun)
+                                        ->where('jenis_penggunaan', 'pengeluaran')
+                                        ->where('kab_kota_id', $record->id)
+                                        ->where('pulau', 'Lombok');
+                                    
+                                    if ($jenisKelamin) {
+                                        $queryPerKabKota->where('jenis_kelamin', $jenisKelamin);
+                                    }
+                                    
+                                    $terpakaiPerKabKota = $queryPerKabKota->sum('jumlah_digunakan');
+                                    if ($terpakaiPerKabKota > 0) {
+                                        return number_format($terpakaiPerKabKota, 0, ',', '.') . ' *';
+                                    }
+                                }
+                                
+                                return number_format($terpakaiGlobal, 0, ',', '.') . ' *';
+                            }
                         } else {
                             $query = PenggunaanKuota::where('tahun', $tahun)
                                 ->where('jenis_penggunaan', 'pengeluaran')
@@ -302,27 +418,86 @@ class KuotaPerKabKotaWidget extends BaseWidget
                         $isLombok = in_array($record->nama ?? '', $kabKotaLombok);
                         
                         if ($isLombok) {
-                            $kuotaQuery = Kuota::where('tahun', $tahun)
-                                ->where('jenis_kuota', 'pengeluaran')
-                                ->whereNull('kab_kota_id')
-                                ->where('pulau', 'Lombok');
-                            $terpakaiQuery = PenggunaanKuota::where('tahun', $tahun)
-                                ->where('jenis_penggunaan', 'pengeluaran')
-                                ->where('pulau', 'Lombok');
-                            
+                            // Cek apakah jenis ternak adalah Bibit Sapi
+                            $isBibitSapi = false;
                             if ($jenisTernakId) {
-                                $kuotaQuery->where('jenis_ternak_id', $jenisTernakId);
-                                $terpakaiQuery->where('jenis_ternak_id', $jenisTernakId);
-                            }
-                            if ($jenisKelamin) {
-                                $kuotaQuery->where('jenis_kelamin', $jenisKelamin);
-                                $terpakaiQuery->where('jenis_kelamin', $jenisKelamin);
+                                $jenisTernak = \App\Models\JenisTernak::find($jenisTernakId);
+                                $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
                             }
                             
-                            $kuota = $kuotaQuery->sum('kuota');
-                            $terpakai = $terpakaiQuery->sum('jumlah_digunakan');
-                            $sisa = max(0, $kuota - $terpakai);
-                            return number_format($sisa, 0, ',', '.') . ' *';
+                            if ($isBibitSapi) {
+                                // Untuk Bibit Sapi di Lombok: hitung sisa per kab/kota
+                                $kuotaQueryPerKabKota = Kuota::where('tahun', $tahun)
+                                    ->where('jenis_kuota', 'pengeluaran')
+                                    ->where('kab_kota_id', $record->id)
+                                    ->where('pulau', 'Lombok')
+                                    ->where('jenis_ternak_id', $jenisTernakId);
+                                $terpakaiQueryPerKabKota = PenggunaanKuota::where('tahun', $tahun)
+                                    ->where('jenis_penggunaan', 'pengeluaran')
+                                    ->where('kab_kota_id', $record->id)
+                                    ->where('pulau', 'Lombok')
+                                    ->where('jenis_ternak_id', $jenisTernakId);
+                                
+                                if ($jenisKelamin) {
+                                    $kuotaQueryPerKabKota->where('jenis_kelamin', $jenisKelamin);
+                                    $terpakaiQueryPerKabKota->where('jenis_kelamin', $jenisKelamin);
+                                }
+                                
+                                $kuotaPerKabKota = $kuotaQueryPerKabKota->sum('kuota');
+                                $terpakaiPerKabKota = $terpakaiQueryPerKabKota->sum('jumlah_digunakan');
+                                $sisa = max(0, $kuotaPerKabKota - $terpakaiPerKabKota);
+                                return number_format($sisa, 0, ',', '.');
+                            } else {
+                                // Untuk jenis ternak lain: hitung sisa global
+                                $kuotaQueryGlobal = Kuota::where('tahun', $tahun)
+                                    ->where('jenis_kuota', 'pengeluaran')
+                                    ->whereNull('kab_kota_id')
+                                    ->where('pulau', 'Lombok');
+                                $terpakaiQueryGlobal = PenggunaanKuota::where('tahun', $tahun)
+                                    ->where('jenis_penggunaan', 'pengeluaran')
+                                    ->where('pulau', 'Lombok');
+                                
+                                if ($jenisTernakId) {
+                                    $kuotaQueryGlobal->where('jenis_ternak_id', $jenisTernakId);
+                                    $terpakaiQueryGlobal->where('jenis_ternak_id', $jenisTernakId);
+                                }
+                                if ($jenisKelamin) {
+                                    $kuotaQueryGlobal->where('jenis_kelamin', $jenisKelamin);
+                                    $terpakaiQueryGlobal->where('jenis_kelamin', $jenisKelamin);
+                                }
+                                
+                                $kuotaGlobal = $kuotaQueryGlobal->sum('kuota');
+                                $terpakaiGlobal = $terpakaiQueryGlobal->sum('jumlah_digunakan');
+                                
+                                // Jika tidak ada kuota global dan tidak ada filter jenis ternak,
+                                // coba cari kuota per kab/kota (untuk kompatibilitas data lama)
+                                if ($kuotaGlobal == 0 && !$jenisTernakId) {
+                                    $kuotaQueryPerKabKota = Kuota::where('tahun', $tahun)
+                                        ->where('jenis_kuota', 'pengeluaran')
+                                        ->where('kab_kota_id', $record->id)
+                                        ->where('pulau', 'Lombok');
+                                    $terpakaiQueryPerKabKota = PenggunaanKuota::where('tahun', $tahun)
+                                        ->where('jenis_penggunaan', 'pengeluaran')
+                                        ->where('kab_kota_id', $record->id)
+                                        ->where('pulau', 'Lombok');
+                                    
+                                    if ($jenisKelamin) {
+                                        $kuotaQueryPerKabKota->where('jenis_kelamin', $jenisKelamin);
+                                        $terpakaiQueryPerKabKota->where('jenis_kelamin', $jenisKelamin);
+                                    }
+                                    
+                                    $kuotaPerKabKota = $kuotaQueryPerKabKota->sum('kuota');
+                                    $terpakaiPerKabKota = $terpakaiQueryPerKabKota->sum('jumlah_digunakan');
+                                    
+                                    if ($kuotaPerKabKota > 0) {
+                                        $sisa = max(0, $kuotaPerKabKota - $terpakaiPerKabKota);
+                                        return number_format($sisa, 0, ',', '.') . ' *';
+                                    }
+                                }
+                                
+                                $sisa = max(0, $kuotaGlobal - $terpakaiGlobal);
+                                return number_format($sisa, 0, ',', '.') . ' *';
+                            }
                         } else {
                             $kuotaQuery = Kuota::where('tahun', $tahun)
                                 ->where('jenis_kuota', 'pengeluaran')
