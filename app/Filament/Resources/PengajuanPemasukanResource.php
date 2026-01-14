@@ -311,6 +311,7 @@ class PengajuanPemasukanResource extends Resource
     public static function getRelations(): array
     {
         return [
+            \App\Filament\Resources\PengajuanPemasukanResource\RelationManagers\DokumenPengajuanRelationManager::class,
             \App\Filament\Resources\PengajuanResource\RelationManagers\HistoriPengajuanRelationManager::class,
         ];
     }
