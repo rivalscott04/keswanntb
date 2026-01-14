@@ -124,6 +124,14 @@ class ViewPengajuanPemasukan extends ViewRecord
                             ->label('Sisa Kuota Pemasukan')
                             ->badge()
                             ->color(function($record) {
+                                // PENTING:
+                                // Untuk pengajuan pemasukan dari luar NTB, kuota TIDAK berlaku
+                                // (mengikuti logika di PengajuanService::verifikasi yang skip catat kuota
+                                // jika $record->provinsi_asal_id tidak null)
+                                if ($record->provinsi_asal_id) {
+                                    return 'gray';
+                                }
+
                                 $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pemasukan', $record->kab_kota_tujuan_id);
                                 if (!$perluKuota) {
                                     return 'gray';
@@ -132,6 +140,11 @@ class ViewPengajuanPemasukan extends ViewRecord
                                 return $kuotaSisa <= 0 ? 'danger' : ($kuotaSisa < $record->jumlah_ternak ? 'warning' : 'success');
                             })
                             ->formatStateUsing(function($record) {
+                                // Untuk pemasukan dari luar NTB: tidak ada kuota
+                                if ($record->provinsi_asal_id) {
+                                    return 'Tidak ada kuota';
+                                }
+
                                 $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pemasukan', $record->kab_kota_tujuan_id);
                                 if (!$perluKuota) {
                                     return 'Tidak ada kuota';
@@ -146,6 +159,11 @@ class ViewPengajuanPemasukan extends ViewRecord
                             ->label('Status Kuota')
                             ->badge()
                             ->color(function($record) {
+                                // Untuk pemasukan dari luar NTB: tidak menggunakan kuota
+                                if ($record->provinsi_asal_id) {
+                                    return 'gray';
+                                }
+
                                 $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pemasukan', $record->kab_kota_tujuan_id);
                                 if (!$perluKuota) {
                                     return 'gray';
@@ -155,6 +173,11 @@ class ViewPengajuanPemasukan extends ViewRecord
                                 return $kuotaSisa < $jumlahDiajukan ? 'danger' : 'success';
                             })
                             ->formatStateUsing(function($record) {
+                                // Untuk pemasukan dari luar NTB: tidak menggunakan kuota
+                                if ($record->provinsi_asal_id) {
+                                    return 'Tidak ada kuota';
+                                }
+
                                 $perluKuota = \App\Models\PenggunaanKuota::isKuotaRequired($record->jenis_ternak_id, 'pemasukan', $record->kab_kota_tujuan_id);
                                 if (!$perluKuota) {
                                     return 'Tidak ada kuota';
