@@ -92,11 +92,28 @@ class KuotaResource extends Resource
                             'Kab. Lombok Utara'
                         ];
                         
-                        // Jika jenis ternak adalah Bibit Sapi, exclude kab/kota Lombok
+                        // Daftar kab/kota di Pulau Sumbawa
+                        $kabKotaSumbawa = [
+                            'Kab. Sumbawa Barat',
+                            'Kab. Sumbawa',
+                            'Kab. Dompu',
+                            'Kab. Bima',
+                            'Kota Bima'
+                        ];
+                        
+                        // Jika jenis ternak adalah Bibit Sapi, filter berdasarkan pulau yang dipilih
                         if ($isBibitSapi) {
-                            // Untuk Bibit Sapi, selalu exclude kab/kota Lombok
-                            return \App\Models\KabKota::whereNotIn('nama', $kabKotaLombok)
-                                ->pluck('nama', 'id');
+                            if ($pulau === 'Lombok') {
+                                // Jika pulau Lombok, tampilkan hanya kab/kota Lombok
+                                return \App\Models\KabKota::whereIn('nama', $kabKotaLombok)
+                                    ->pluck('nama', 'id');
+                            } elseif ($pulau === 'Sumbawa') {
+                                // Jika pulau Sumbawa, tampilkan hanya kab/kota Sumbawa
+                                return \App\Models\KabKota::whereIn('nama', $kabKotaSumbawa)
+                                    ->pluck('nama', 'id');
+                            }
+                            // Jika belum pilih pulau, tampilkan semua
+                            return \App\Models\KabKota::pluck('nama', 'id');
                         }
                         
                         // Jika pulau Lombok dan jenis kuota pemasukan, tampilkan hanya kab/kota Lombok
@@ -125,9 +142,9 @@ class KuotaResource extends Resource
                             $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
                         }
                         
-                        // Jika Bibit Sapi, selalu tampilkan field kab/kota (kecuali pulau Lombok + pengeluaran)
+                        // Jika Bibit Sapi, selalu tampilkan field kab/kota
                         if ($isBibitSapi) {
-                            return !($pulau === 'Lombok' && $jenisKuota === 'pengeluaran');
+                            return true;
                         }
                         
                         // Tampilkan jika:
@@ -147,9 +164,9 @@ class KuotaResource extends Resource
                             $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
                         }
                         
-                        // Jika Bibit Sapi, required kecuali pulau Lombok + pengeluaran
+                        // Jika Bibit Sapi, selalu required
                         if ($isBibitSapi) {
-                            return !($pulau === 'Lombok' && $jenisKuota === 'pengeluaran');
+                            return true;
                         }
                         
                         // Required jika:
@@ -171,7 +188,12 @@ class KuotaResource extends Resource
                         }
                         
                         if ($isBibitSapi) {
-                            return 'Untuk kuota Bibit Sapi, kab/kota di Pulau Lombok tidak dapat dipilih';
+                            if ($pulau === 'Lombok') {
+                                return 'Pilih kab/kota di Pulau Lombok untuk kuota Bibit Sapi';
+                            } elseif ($pulau === 'Sumbawa') {
+                                return 'Pilih kab/kota di Pulau Sumbawa untuk kuota Bibit Sapi';
+                            }
+                            return 'Pilih pulau terlebih dahulu untuk melihat kab/kota yang tersedia';
                         }
                         
                         if ($pulau === 'Lombok' && $jenisKuota === 'pemasukan') {
