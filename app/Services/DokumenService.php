@@ -265,15 +265,27 @@ class DokumenService
             
             // Placeholder tambahan dari template
             'noperusahaan' => $pengajuan->user->no_nib ?? $pengajuan->user->no_npwp ?? '-', // Nomor perusahaan (NIB atau NPWP)
-            'jmlhari' => $tanggalBerlakuAwal->translatedFormat('d F Y') . ' s/d ' . $tanggalBerlakuAkhir->translatedFormat('d F Y'), // Format: "9 Januari 2026 s/d 22 Januari 2026"
+            'jmlhari' => $tanggalBerlakuAwal->translatedFormat('d F Y') . ' s/d ' . $tanggalBerlakuAkhir->translatedFormat('d F Y'), // Format: "13 Januari 2026 s/d 26 Januari 2026"
             'Sjmlhari' => (string)$jumlahHariBerlaku, // Jumlah hari berlaku (untuk placeholder "(Sjmlhari hari sejak di terbitkan)")
             'hari_berlaku' => (string)$jumlahHariBerlaku, // Alias untuk Sjmlhari
+            'jmlhari_hari' => '(' . $jumlahHariBerlaku . ' hari sejak di terbitkan)', // Format lengkap untuk placeholder "(Sjmlhari hari sejak di terbitkan)"
+            'jmlhari_format' => $jumlahHariBerlaku . ' hari sejak di terbitkan', // Format tanpa kurung
             
             // Tanggal dokumen (setelah approval)
             'tanggal_dokumen' => $tanggalSurat->translatedFormat('d F Y'),
             'tanggal' => $tanggalSurat->translatedFormat('d F Y'), // Alias
             'tanggal_ttd' => $tanggalSurat->translatedFormat('d F Y'),
             'tanggal_sekarang' => $tanggalSurat->translatedFormat('d F Y'), // Alias
+            'tglsetujui' => $tanggalSurat->translatedFormat('d F Y'), // Tanggal setujui/approval (untuk placeholder ${tglsetujui})
+            'tanggal_setujui' => $tanggalSurat->translatedFormat('d F Y'), // Alias dengan underscore
+            
+            // Format lengkap dengan lokasi (untuk "Mataram, [tanggal]")
+            'lokasi_tanggal' => 'Mataram, ' . $tanggalSurat->translatedFormat('d F Y'), // Format: "Mataram, 13 Januari 2026"
+            'mataram_tanggal' => 'Mataram, ' . $tanggalSurat->translatedFormat('d F Y'), // Alias
+            'lokasitanggal' => 'Mataram, ' . $tanggalSurat->translatedFormat('d F Y'), // Alias tanpa underscore
+            'mataramtanggal' => 'Mataram, ' . $tanggalSurat->translatedFormat('d F Y'), // Alias tanpa underscore
+            'lokasi' => 'Mataram', // Lokasi default
+            'mataram' => 'Mataram', // Alias untuk lokasi
             
             // Biodata kadis
             'nama_kadis' => $biodataKadis->nama ?? '-',
