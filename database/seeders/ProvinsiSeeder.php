@@ -14,40 +14,62 @@ class ProvinsiSeeder extends Seeder
      */
     public function run()
     {
-        Provinsi::create(['nama' => 'Aceh']);
-        Provinsi::create(['nama' => 'Sumatera Utara']);
-        Provinsi::create(['nama' => 'Sumatera Selatan']);
-        Provinsi::create(['nama' => 'Sumatera Barat']);
-        Provinsi::create(['nama' => 'Riau']);
-        Provinsi::create(['nama' => 'Kepulauan Riau']);
-        Provinsi::create(['nama' => 'Bangka Belitung']);
-        Provinsi::create(['nama' => 'Bengkulu']);
-        Provinsi::create(['nama' => 'Jambi']);
-        Provinsi::create(['nama' => 'Lampung']);
+        // 34 Provinsi di Indonesia (update 2024)
+        $provinsi = [
+            // Sumatera (10 provinsi)
+            'Aceh',
+            'Sumatera Utara',
+            'Sumatera Barat',
+            'Riau',
+            'Kepulauan Riau',
+            'Jambi',
+            'Sumatera Selatan',
+            'Bangka Belitung',
+            'Bengkulu',
+            'Lampung',
+            
+            // Jawa (6 provinsi)
+            'DKI Jakarta',
+            'Jawa Barat',
+            'Jawa Tengah',
+            'Yogyakarta',
+            'Jawa Timur',
+            'Banten',
+            
+            // Bali & Nusa Tenggara (3 provinsi)
+            'Bali',
+            'Nusa Tenggara Barat',
+            'Nusa Tenggara Timur',
+            
+            // Kalimantan (5 provinsi)
+            'Kalimantan Barat',
+            'Kalimantan Tengah',
+            'Kalimantan Selatan',
+            'Kalimantan Timur',
+            'Kalimantan Utara',
+            
+            // Sulawesi (6 provinsi)
+            'Sulawesi Utara',
+            'Sulawesi Tengah',
+            'Sulawesi Selatan',
+            'Sulawesi Tenggara',
+            'Gorontalo',
+            'Sulawesi Barat',
+            
+            // Maluku (2 provinsi)
+            'Maluku',
+            'Maluku Utara',
+            
+            // Papua (2 provinsi)
+            'Papua Barat',
+            'Papua',
+        ];
 
-        Provinsi::create(['nama' => 'Kalimantan Timur']);
-        Provinsi::create(['nama' => 'Kalimantan Barat']);
-        Provinsi::create(['nama' => 'Kalimantan Tengah']);
-        Provinsi::create(['nama' => 'Kalimantan Utara']);
-        Provinsi::create(['nama' => 'DKI Jakarta']);
-        Provinsi::create(['nama' => 'Banten']);
-        Provinsi::create(['nama' => 'Jawa Barat']);
-        Provinsi::create(['nama' => 'Jawa Tengah']);
-        Provinsi::create(['nama' => 'Yogyakarta']);
-        Provinsi::create(['nama' => 'Jawa Timur']);
-
-        Provinsi::create(['nama' => 'Bali']);
-        Provinsi::create(['nama' => 'Nusa Tenggara Barat']);
-        Provinsi::create(['nama' => 'Nusa Tenggara Timur']);
-        Provinsi::create(['nama' => 'Sulawesi Utara']);
-        Provinsi::create(['nama' => 'Sulawesi Barat']);
-        Provinsi::create(['nama' => 'Sulawesi Tengah']);
-        Provinsi::create(['nama' => 'Gorontalo']);
-        Provinsi::create(['nama' => 'Sulawesi Tenggara']);
-        Provinsi::create(['nama' => 'Sulawesi Selatan']);
-        Provinsi::create(['nama' => 'Maluku']);
-
-        Provinsi::create(['nama' => 'Papua Barat']);
-        Provinsi::create(['nama' => 'Papua']);
+        foreach ($provinsi as $nama) {
+            Provinsi::updateOrCreate(
+                ['nama' => $nama],
+                ['nama' => $nama]
+            );
+        }
     }
 } 
