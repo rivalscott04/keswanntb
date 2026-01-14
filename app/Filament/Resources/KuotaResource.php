@@ -42,7 +42,8 @@ class KuotaResource extends Resource
                     })
                     ->searchable()
                     ->preload()
-                    ->required(),
+                    ->required()
+                    ->live(),
                 Forms\Components\Select::make('jenis_kelamin')
                     ->label('Jenis Kelamin')
                     ->options([
@@ -73,16 +74,33 @@ class KuotaResource extends Resource
                     ->options(function (callable $get) {
                         $pulau = $get('pulau');
                         $jenisKuota = $get('jenis_kuota');
+                        $jenisTernakId = $get('jenis_ternak_id');
+                        
+                        // Cek apakah jenis ternak adalah Bibit Sapi
+                        $isBibitSapi = false;
+                        if ($jenisTernakId) {
+                            $jenisTernak = \App\Models\JenisTernak::find($jenisTernakId);
+                            $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
+                        }
+                        
+                        // Daftar kab/kota di Pulau Lombok
+                        $kabKotaLombok = [
+                            'Kota Mataram',
+                            'Kab. Lombok Barat',
+                            'Kab. Lombok Tengah',
+                            'Kab. Lombok Timur',
+                            'Kab. Lombok Utara'
+                        ];
+                        
+                        // Jika jenis ternak adalah Bibit Sapi, exclude kab/kota Lombok
+                        if ($isBibitSapi) {
+                            // Untuk Bibit Sapi, selalu exclude kab/kota Lombok
+                            return \App\Models\KabKota::whereNotIn('nama', $kabKotaLombok)
+                                ->pluck('nama', 'id');
+                        }
                         
                         // Jika pulau Lombok dan jenis kuota pemasukan, tampilkan hanya kab/kota Lombok
                         if ($pulau === 'Lombok' && $jenisKuota === 'pemasukan') {
-                            $kabKotaLombok = [
-                                'Kota Mataram',
-                                'Kab. Lombok Barat',
-                                'Kab. Lombok Tengah',
-                                'Kab. Lombok Timur',
-                                'Kab. Lombok Utara'
-                            ];
                             return \App\Models\KabKota::whereIn('nama', $kabKotaLombok)
                                 ->pluck('nama', 'id');
                         }
@@ -98,6 +116,19 @@ class KuotaResource extends Resource
                     ->visible(function (callable $get) {
                         $pulau = $get('pulau');
                         $jenisKuota = $get('jenis_kuota');
+                        $jenisTernakId = $get('jenis_ternak_id');
+                        
+                        // Cek apakah jenis ternak adalah Bibit Sapi
+                        $isBibitSapi = false;
+                        if ($jenisTernakId) {
+                            $jenisTernak = \App\Models\JenisTernak::find($jenisTernakId);
+                            $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
+                        }
+                        
+                        // Jika Bibit Sapi, selalu tampilkan field kab/kota (kecuali pulau Lombok + pengeluaran)
+                        if ($isBibitSapi) {
+                            return !($pulau === 'Lombok' && $jenisKuota === 'pengeluaran');
+                        }
                         
                         // Tampilkan jika:
                         // 1. Bukan pulau Lombok, ATAU
@@ -107,6 +138,19 @@ class KuotaResource extends Resource
                     ->required(function (callable $get) {
                         $pulau = $get('pulau');
                         $jenisKuota = $get('jenis_kuota');
+                        $jenisTernakId = $get('jenis_ternak_id');
+                        
+                        // Cek apakah jenis ternak adalah Bibit Sapi
+                        $isBibitSapi = false;
+                        if ($jenisTernakId) {
+                            $jenisTernak = \App\Models\JenisTernak::find($jenisTernakId);
+                            $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
+                        }
+                        
+                        // Jika Bibit Sapi, required kecuali pulau Lombok + pengeluaran
+                        if ($isBibitSapi) {
+                            return !($pulau === 'Lombok' && $jenisKuota === 'pengeluaran');
+                        }
                         
                         // Required jika:
                         // 1. Bukan pulau Lombok, ATAU
@@ -117,6 +161,18 @@ class KuotaResource extends Resource
                     ->helperText(function (callable $get) {
                         $pulau = $get('pulau');
                         $jenisKuota = $get('jenis_kuota');
+                        $jenisTernakId = $get('jenis_ternak_id');
+                        
+                        // Cek apakah jenis ternak adalah Bibit Sapi
+                        $isBibitSapi = false;
+                        if ($jenisTernakId) {
+                            $jenisTernak = \App\Models\JenisTernak::find($jenisTernakId);
+                            $isBibitSapi = $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
+                        }
+                        
+                        if ($isBibitSapi) {
+                            return 'Untuk kuota Bibit Sapi, kab/kota di Pulau Lombok tidak dapat dipilih';
+                        }
                         
                         if ($pulau === 'Lombok' && $jenisKuota === 'pemasukan') {
                             return 'Pilih kab/kota di Pulau Lombok untuk kuota pemasukan spesifik per kab/kota';
