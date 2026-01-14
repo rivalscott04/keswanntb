@@ -50,38 +50,17 @@ class PengajuanService
         // Kuota akan berkurang ketika Disnak Provinsi menyetujui pengajuan
         if ($record->tahapVerifikasi->urutan === 4) {
             if ($record->jenis_pengajuan === 'pemasukan') {
-                // Untuk pengajuan pemasukan, berdasarkan hasil rapat supply-demand:
-                // - Pemasukan sapi pedaging dari luar daerah ke kab/kota di pulau Lombok TIDAK mengurangi kuota pemasukan Lombok
-                // - Kuota pemasukan kab/kota pulau Lombok hanya berlaku untuk pemasukan sapi pedaging dari kab/kota pulau Sumbawa (antar_kab_kota)
-                // - Pemasukan dari luar daerah ke Lombok: TIDAK catat kuota
-                // - Pemasukan sapi eksotik tetap catat kuota (karena ada kuota khusus)
+                // Untuk pengajuan pemasukan dari LUAR NTB ke NTB:
+                // - TIDAK mengurangi kuota pemasukan sama sekali
+                // - Kuota pemasukan kab/kota hanya berlaku untuk pergerakan INTERNAL NTB (antar_kab_kota)
+                // - Jadi untuk semua pemasukan dari luar daerah: SKIP pencatatan kuota
                 
-                // Daftar kab/kota di pulau Lombok
-                $kabKotaLombok = [
-                    'Kota Mataram',
-                    'Kab. Lombok Barat', 
-                    'Kab. Lombok Tengah',
-                    'Kab. Lombok Timur',
-                    'Kab. Lombok Utara'
-                ];
-                
-                $kabKotaTujuan = $record->kabKotaTujuan;
-                $isLombokTujuan = $kabKotaTujuan && in_array($kabKotaTujuan->nama, $kabKotaLombok);
-                
-                // Cek apakah ini sapi pedaging (bukan bibit, bukan eksotik)
-                $jenisTernak = $record->jenisTernak;
-                $namaJenisTernak = $jenisTernak ? strtolower($jenisTernak->nama) : '';
-                $isSapiPedaging = str_contains($namaJenisTernak, 'sapi') && 
-                                  !str_contains($namaJenisTernak, 'bibit') && 
-                                  !str_contains($namaJenisTernak, 'eksotik');
-                
-                // Jika pemasukan sapi pedaging ke Lombok dari luar daerah, TIDAK catat kuota
-                // (karena pemasukan selalu dari luar NTB, bukan dari Sumbawa)
-                if ($isLombokTujuan && $isSapiPedaging) {
-                    // Pemasukan sapi pedaging dari luar daerah ke Lombok tidak mengurangi kuota
-                    // Skip pencatatan kuota
+                // Pemasukan dari luar NTB tidak pakai kuota
+                // (provinsi_asal_id != null berarti dari luar NTB)
+                if ($record->provinsi_asal_id) {
+                    // Skip pencatatan kuota - pemasukan dari luar daerah tidak mengurangi kuota
                 } else {
-                    // Untuk sapi eksotik atau tujuan selain Lombok, tetap catat kuota
+                    // Jika tidak ada provinsi_asal_id, mungkin data lama atau error, tetap catat
                     self::catatPenggunaanKuota($record, 'pemasukan');
                 }
             } elseif ($record->jenis_pengajuan === 'pengeluaran') {

@@ -36,9 +36,17 @@ class PengajuanPemasukanResource extends Resource
             $jenisTernakId = $get('jenis_ternak_id');
             $kabKotaTujuanId = $get('kab_kota_tujuan_id');
             $jenisKelamin = $get('jenis_kelamin');
+            $provinsiAsalId = $get('provinsi_asal_id');
 
-            if (!$kabKotaTujuanId) {
-                return 0;
+            // Hindari menampilkan angka "0" saat field belum lengkap
+            if (!$kabKotaTujuanId || !$jenisTernakId || !$jenisKelamin || !$tahun) {
+                return '-';
+            }
+
+            // Pemasukan dari luar NTB: tidak menggunakan kuota.
+            // Kuota hanya relevan untuk pergerakan internal NTB (mis. Sumbawa -> Lombok) yang masuk di jenis pengajuan lain.
+            if ($provinsiAsalId) {
+                return 'Tidak ada kuota (asal luar NTB)';
             }
 
             // Cek apakah jenis ternak ini memerlukan kuota
