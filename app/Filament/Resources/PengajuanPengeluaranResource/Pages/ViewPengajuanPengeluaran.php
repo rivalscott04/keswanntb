@@ -242,17 +242,22 @@ class ViewPengajuanPengeluaran extends ViewRecord
                                 $user = auth()->user();
                                 $dokumen = $record->dokumenPengajuan()->aktif()->get();
                                 
-                                // Filter dokumen berdasarkan akses:
-                                // - Dokumen draft (di-generate otomatis) hanya bisa dilihat Disnak Provinsi
-                                // - Dokumen manual (di-upload setelah TTD) bisa dilihat semua yang berhak
-                                $dokumen = $dokumen->filter(function ($doc) use ($user) {
-                                    if ($doc->isDraft()) {
-                                        // Dokumen draft hanya untuk Disnak Provinsi atau Admin
-                                        return $user->is_admin || ($user->wewenang && $user->wewenang->nama === 'Disnak Provinsi');
-                                    }
-                                    // Dokumen manual bisa dilihat semua yang berhak
-                                    return true;
-                                });
+                                // Admin dan Disnak Provinsi bisa melihat semua dokumen tanpa filter
+                                if ($user->is_admin || ($user->wewenang && $user->wewenang->nama === 'Disnak Provinsi')) {
+                                    // Tidak perlu filter, tampilkan semua dokumen
+                                } else {
+                                    // Filter dokumen berdasarkan akses untuk user lain:
+                                    // - Dokumen draft (di-generate otomatis) hanya bisa dilihat Disnak Provinsi
+                                    // - Dokumen manual (di-upload setelah TTD) bisa dilihat semua yang berhak
+                                    $dokumen = $dokumen->filter(function ($doc) use ($user) {
+                                        if ($doc->isDraft()) {
+                                            // Dokumen draft hanya untuk Disnak Provinsi atau Admin
+                                            return false; // User lain tidak bisa lihat draft
+                                        }
+                                        // Dokumen manual bisa dilihat semua yang berhak (termasuk dinas kab/kota, pengguna, dll)
+                                        return true;
+                                    });
+                                }
                                 
                                 if ($dokumen->isEmpty()) {
                                     return 'Belum ada dokumen yang diupload';
@@ -279,7 +284,35 @@ class ViewPengajuanPengeluaran extends ViewRecord
                             })
                             ->html(),
                     ])
-                    ->visible(fn($record) => $record->dokumenPengajuan()->aktif()->exists()),
+                    ->visible(function ($record) {
+                        $user = auth()->user();
+                        if (!$user) {
+                            return false;
+                        }
+                        
+                        $dokumen = $record->dokumenPengajuan()->aktif()->get();
+                        
+                        if ($dokumen->isEmpty()) {
+                            return false;
+                        }
+                        
+                        // Admin dan Disnak Provinsi bisa melihat semua dokumen
+                        if ($user->is_admin || ($user->wewenang && $user->wewenang->nama === 'Disnak Provinsi')) {
+                            return true;
+                        }
+                        
+                        // Cek apakah ada dokumen yang bisa dilihat user setelah filter
+                        $dokumenVisible = $dokumen->filter(function ($doc) use ($user) {
+                            if ($doc->isDraft()) {
+                                // Dokumen draft hanya untuk Disnak Provinsi atau Admin
+                                return false; // User lain tidak bisa lihat draft
+                            }
+                            // Dokumen manual bisa dilihat semua yang berhak (termasuk dinas kab/kota, pengguna, dll)
+                            return true;
+                        });
+                        
+                        return $dokumenVisible->isNotEmpty();
+                    }),
             ]);
     }
 
