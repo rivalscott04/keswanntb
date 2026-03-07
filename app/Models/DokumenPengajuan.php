@@ -54,9 +54,9 @@ class DokumenPengajuan extends Model
     public function getNamaFileDisplayAttribute(): string
     {
         $extensions = [
-            'rekomendasi_keswan' => 'Rekomendasi Keswan',
+            'rekomendasi_keswan' => 'Rekomendasi',
             'skkh' => 'SKKH',
-            'surat_keterangan_veteriner' => 'Surat Keterangan Veteriner',
+            'surat_keterangan_veteriner' => 'Sertifikat Veteriner',
             'izin_pengeluaran' => 'Izin Pengeluaran',
             'izin_pemasukan' => 'Izin Pemasukan',
             'dokumen_lainnya' => 'Dokumen Lainnya',

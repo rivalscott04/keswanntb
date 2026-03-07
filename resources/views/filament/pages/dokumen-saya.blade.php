@@ -24,9 +24,9 @@
                     </h3>
                     <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
                         <ul class="list-disc list-inside space-y-1">
-                            <li><strong>Rekomendasi Keswan:</strong> Dokumen rekomendasi dari dinas kab/kota dan provinsi</li>
+                            <li><strong>Rekomendasi:</strong> Dokumen rekomendasi dari dinas kab/kota dan provinsi</li>
                             <li><strong>SKKH:</strong> Surat Keterangan Kesehatan Hewan dari dinas kab/kota asal</li>
-                            <li><strong>Surat Keterangan Veteriner:</strong> Dokumen tambahan dari dinas kab/kota</li>
+                            <li><strong>Sertifikat Veteriner:</strong> Dokumen tambahan dari dinas kab/kota</li>
                             <li><strong>Izin Pengeluaran/Pemasukan:</strong> Dokumen izin resmi dari DPMPTSP</li>
                         </ul>
                     </div>

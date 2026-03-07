@@ -531,9 +531,9 @@ class ViewPengajuan extends ViewRecord
                 // Untuk pengeluaran, kab/kota asal upload semua dokumen
                 if ($user->kab_kota_id === $record->kab_kota_asal_id) {
                     $types = [
-                        'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                        'rekomendasi_keswan' => 'Rekomendasi',
                         'skkh' => 'SKKH',
-                        'surat_keterangan_veteriner' => 'Surat Keterangan Veteriner',
+                        'surat_keterangan_veteriner' => 'Sertifikat Veteriner',
                         'dokumen_lainnya' => 'Dokumen Lainnya',
                     ];
                 }
@@ -541,7 +541,7 @@ class ViewPengajuan extends ViewRecord
                 // Untuk pemasukan, kab/kota tujuan upload rekomendasi saja
                 if ($user->kab_kota_id === $record->kab_kota_tujuan_id) {
                     $types = [
-                        'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                        'rekomendasi_keswan' => 'Rekomendasi',
                     ];
                 }
             } else {
@@ -549,15 +549,15 @@ class ViewPengajuan extends ViewRecord
                 if ($user->kab_kota_id === $record->kab_kota_asal_id) {
                     // Kab/kota asal upload semua dokumen
                     $types = [
-                        'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                        'rekomendasi_keswan' => 'Rekomendasi',
                         'skkh' => 'SKKH',
-                        'surat_keterangan_veteriner' => 'Surat Keterangan Veteriner',
+                        'surat_keterangan_veteriner' => 'Sertifikat Veteriner',
                         'dokumen_lainnya' => 'Dokumen Lainnya',
                     ];
                 } elseif ($user->kab_kota_id === $record->kab_kota_tujuan_id) {
                     // Kab/kota tujuan upload rekomendasi saja
                     $types = [
-                        'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                        'rekomendasi_keswan' => 'Rekomendasi',
                     ];
                 }
             }
@@ -566,7 +566,7 @@ class ViewPengajuan extends ViewRecord
         if ($user->wewenang->nama === 'Disnak Provinsi') {
             // Provinsi upload rekomendasi saja
             $types = [
-                'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                'rekomendasi_keswan' => 'Rekomendasi',
             ];
         }
 

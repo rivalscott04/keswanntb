@@ -36,9 +36,9 @@ class DokumenPengajuanResource extends Resource
                 Forms\Components\Select::make('jenis_dokumen')
                     ->label('Jenis Dokumen')
                     ->options([
-                        'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                        'rekomendasi_keswan' => 'Rekomendasi',
                         'skkh' => 'SKKH',
-                        'surat_keterangan_veteriner' => 'Surat Keterangan Veteriner',
+                        'surat_keterangan_veteriner' => 'Sertifikat Veteriner',
                         'izin_pengeluaran' => 'Izin Pengeluaran',
                         'izin_pemasukan' => 'Izin Pemasukan',
                         'dokumen_lainnya' => 'Dokumen Lainnya',
@@ -123,9 +123,9 @@ class DokumenPengajuanResource extends Resource
                         'dokumen_lainnya' => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                        'rekomendasi_keswan' => 'Rekomendasi',
                         'skkh' => 'SKKH',
-                        'surat_keterangan_veteriner' => 'Surat Keterangan Veteriner',
+                        'surat_keterangan_veteriner' => 'Sertifikat Veteriner',
                         'izin_pengeluaran' => 'Izin Pengeluaran',
                         'izin_pemasukan' => 'Izin Pemasukan',
                         'dokumen_lainnya' => 'Dokumen Lainnya',
@@ -152,9 +152,9 @@ class DokumenPengajuanResource extends Resource
                 Tables\Filters\SelectFilter::make('jenis_dokumen')
                     ->label('Jenis Dokumen')
                     ->options([
-                        'rekomendasi_keswan' => 'Rekomendasi Keswan',
+                        'rekomendasi_keswan' => 'Rekomendasi',
                         'skkh' => 'SKKH',
-                        'surat_keterangan_veteriner' => 'Surat Keterangan Veteriner',
+                        'surat_keterangan_veteriner' => 'Sertifikat Veteriner',
                         'izin_pengeluaran' => 'Izin Pengeluaran',
                         'izin_pemasukan' => 'Izin Pemasukan',
                         'dokumen_lainnya' => 'Dokumen Lainnya',

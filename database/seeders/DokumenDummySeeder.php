@@ -141,9 +141,9 @@ class DokumenDummySeeder extends Seeder
     private function getJenisDokumenLabel($jenis)
     {
         return match ($jenis) {
-            'rekomendasi_keswan' => 'Rekomendasi Keswan',
+            'rekomendasi_keswan' => 'Rekomendasi',
             'skkh' => 'Surat Keterangan Kesehatan Hewan',
-            'surat_keterangan_veteriner' => 'Surat Keterangan Veteriner',
+            'surat_keterangan_veteriner' => 'Sertifikat Veteriner',
             'izin_pengeluaran' => 'Izin Pengeluaran',
             'izin_pemasukan' => 'Izin Pemasukan',
             'dokumen_lainnya' => 'Dokumen Lainnya',
