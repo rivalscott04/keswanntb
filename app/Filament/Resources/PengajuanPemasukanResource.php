@@ -95,6 +95,14 @@ class PengajuanPemasukanResource extends Resource
         };
         return $form
             ->schema([
+                Forms\Components\DateTimePicker::make('created_at')
+                    ->label('Dibuat pada')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->seconds(false)
+                    ->visibleOn('edit')
+                    ->columnSpanFull(),
+
                 Forms\Components\Select::make('tahun_pengajuan')
                     ->label('Tahun Pengajuan')
                     // Tambahkan pilihan tahun sampai beberapa tahun ke depan (mis. 5 tahun),
@@ -268,6 +276,11 @@ class PengajuanPemasukanResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Dibuat pada')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
+                    ->toggleable(false),
                 Tables\Columns\TextColumn::make('nomor_surat_permohonan')
                     ->label('Nomor Surat')
                     ->searchable(),

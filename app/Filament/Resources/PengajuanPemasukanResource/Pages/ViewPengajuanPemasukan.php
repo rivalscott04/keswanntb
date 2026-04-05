@@ -101,6 +101,9 @@ class ViewPengajuanPemasukan extends ViewRecord
 
                 Infolists\Components\Section::make('Informasi Pengajuan')
                     ->schema([
+                        Infolists\Components\TextEntry::make('created_at')
+                            ->label('Dibuat pada')
+                            ->dateTime('d/m/Y H:i'),
                         Infolists\Components\TextEntry::make('tahun_pengajuan')
                             ->label('Tahun Pengajuan'),
                         Infolists\Components\TextEntry::make('status')

@@ -270,6 +270,9 @@ class ViewPengajuan extends ViewRecord
 
                 Section::make()
                     ->schema([
+                        TextEntry::make('created_at')
+                            ->label('Dibuat pada')
+                            ->dateTime('d/m/Y H:i'),
                         TextEntry::make('status')
                             ->label('Status Pengajuan')
                             ->badge()
