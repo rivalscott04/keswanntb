@@ -498,7 +498,7 @@ class PengajuanPengeluaranResource extends Resource
     {
         $user = auth()->user();
         
-        if (!$user->provinsi_verified_at) {
+        if (!$user->isAccountActive()) {
             UnverifiedAccountNotification::make()->send();
             return false;
         }
@@ -509,6 +509,6 @@ class PengajuanPengeluaranResource extends Resource
     public static function canCreate(): bool
     {
         $user = auth()->user();
-        return $user->wewenang->nama === 'Pengguna' && $user->provinsi_verified_at !== null;
+        return $user->wewenang->nama === 'Pengguna' && $user->isAccountActive();
     }
 }

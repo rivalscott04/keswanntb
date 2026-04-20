@@ -199,6 +199,9 @@ class Register extends BaseRegister
                 } elseif (str_contains($errorMessage, 'users_telepon_unique')) {
                     $title = 'Nomor telepon sudah terdaftar!';
                     $body = 'Nomor telepon yang Anda masukkan sudah terdaftar dalam sistem. Silakan gunakan nomor telepon lain.';
+                } elseif (str_contains($errorMessage, 'users_no_nib_unique')) {
+                    $title = 'NIB sudah terdaftar!';
+                    $body = 'NIB ini sudah terdaftar. Jika akun sebelumnya kadaluarsa/nonaktif, mohon hubungi Admin Provinsi untuk aktivasi kembali akun yang sama.';
                 }
                 
                 Notification::make()

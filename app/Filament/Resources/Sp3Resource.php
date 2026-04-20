@@ -194,11 +194,13 @@ class Sp3Resource extends Resource
                     ->label('Status SP3')
                     ->formatStateUsing(function ($record) {
                         if (!$record->no_sp3) return 'Belum Ada';
+                        if (!$record->is_active) return 'Nonaktif';
                         return $record->tanggal_berlaku > now() ? 'Aktif' : 'Kadaluarsa';
                     })
                     ->badge()
                     ->color(function ($record) {
                         if (!$record->no_sp3) return 'gray';
+                        if (!$record->is_active) return 'danger';
                         return $record->tanggal_berlaku > now() ? 'success' : 'danger';
                     }),
             ])
@@ -343,6 +345,7 @@ class Sp3Resource extends Resource
                             'provinsi_verified_by' => auth()->id(),
                             'tanggal_verifikasi' => $now,
                             'tanggal_berlaku' => $now->copy()->addYears(3),
+                            'is_active' => true,
                             'no_sp3' => $data['no_sp3'],
                             'no_register' => $data['no_register']
                         ];
@@ -398,10 +401,55 @@ class Sp3Resource extends Resource
                             'no_register' => $data['no_register_baru'],
                             'tanggal_verifikasi' => $now,
                             'tanggal_berlaku' => $now->copy()->addYears(3),
+                            'is_active' => true,
                         ]);
                         
                         \Filament\Notifications\Notification::make()
                             ->title('SP3 berhasil diperpanjang')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('aktifkan_akun')
+                    ->label('Aktifkan')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->visible(function ($record) {
+                        $user = auth()->user();
+
+                        return $user->wewenang->nama === 'Disnak Provinsi' &&
+                            $record->provinsi_verified_at &&
+                            !$record->is_active;
+                    })
+                    ->action(function ($record) {
+                        $record->update([
+                            'is_active' => true,
+                        ]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Akun pengguna berhasil diaktifkan')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('nonaktifkan_akun')
+                    ->label('Nonaktifkan')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(function ($record) {
+                        $user = auth()->user();
+
+                        return $user->wewenang->nama === 'Disnak Provinsi' &&
+                            $record->provinsi_verified_at &&
+                            $record->is_active;
+                    })
+                    ->action(function ($record) {
+                        $record->update([
+                            'is_active' => false,
+                        ]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Akun pengguna berhasil dinonaktifkan')
                             ->success()
                             ->send();
                     }),
@@ -482,6 +530,7 @@ class Sp3Resource extends Resource
                                 'provinsi_verified_by' => auth()->id(),
                                 'tanggal_verifikasi' => $now,
                                 'tanggal_berlaku' => $now->copy()->addYears(3),
+                                'is_active' => true,
                                 'no_sp3' => $data['no_sp3_prefix'] . '/' . str_pad($counter, 3, '0', STR_PAD_LEFT) . '/' . $now->format('Y'),
                                 'no_register' => $data['no_register_prefix'] . '/' . str_pad($counter, 3, '0', STR_PAD_LEFT) . '/' . $now->format('Y'),
                             ];

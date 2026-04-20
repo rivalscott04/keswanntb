@@ -468,6 +468,7 @@ class ViewSp3 extends ViewRecord
                         'provinsi_verified_by' => auth()->id(),
                         'tanggal_verifikasi' => $now,
                         'tanggal_berlaku' => $now->copy()->addYears(3),
+                        'is_active' => true,
                         'no_sp3' => $data['no_sp3'],
                         'no_register' => $data['no_register']
                     ];

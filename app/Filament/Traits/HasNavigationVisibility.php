@@ -20,7 +20,7 @@ trait HasNavigationVisibility
         }
 
         // If user has wewenang "Pengguna", they can only see Pengajuan group
-        if ($user->wewenang->nama === 'Pengguna' && $user->provinsi_verified_at) {
+        if ($user->wewenang->nama === 'Pengguna' && $user->isAccountActive()) {
             return static::$navigationGroup === 'Pengajuan';
         }
 

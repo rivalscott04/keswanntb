@@ -187,8 +187,16 @@ class DokumenSaya extends Page implements HasTable
     public static function shouldRegisterNavigation(): bool
     {
         $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->wewenang->nama === 'Pengguna') {
+            return $user->isAccountActive();
+        }
+
         // Menu "Daftar Dokumen" tersedia untuk semua user yang sudah
         // diverifikasi provinsi, bukan hanya Pengguna.
-        return (bool) ($user && $user->provinsi_verified_at);
+        return (bool) $user->provinsi_verified_at;
     }
 }

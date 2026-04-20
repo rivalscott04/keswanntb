@@ -29,7 +29,14 @@ class UserResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->check() && auth()->user()->is_admin;
+        if (!auth()->check()) {
+            return false;
+        }
+
+        $user = auth()->user();
+        $wewenang = $user->wewenang->nama ?? null;
+
+        return $user->is_admin || in_array($wewenang, ['Disnak Kab/Kota', 'Disnak Provinsi'], true);
     }
 
     public static function canCreate(): bool
@@ -39,7 +46,18 @@ class UserResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return auth()->check() && auth()->user()->is_admin;
+        if (!auth()->check()) {
+            return false;
+        }
+
+        $user = auth()->user();
+        $isProvinsi = ($user->wewenang->nama ?? null) === 'Disnak Provinsi';
+
+        if ($user->is_admin) {
+            return true;
+        }
+
+        return $isProvinsi && ($record->wewenang->nama ?? null) === 'Pengguna';
     }
 
     public static function canDelete(Model $record): bool
@@ -281,9 +299,29 @@ class UserResource extends Resource
                     ->visible(fn() => auth()->user()->wewenang->nama === 'Disnak Provinsi'),
                 Tables\Columns\TextColumn::make('provinsi_verified_at')
                     ->label('Status Akun')
-                    ->formatStateUsing(fn($state) => $state ? 'Aktif' : 'Belum Aktif')
+                    ->formatStateUsing(function ($record) {
+                        if (!$record->provinsi_verified_at) {
+                            return 'Belum Aktif';
+                        }
+
+                        if ($record->isSp3Expired()) {
+                            return 'Kadaluarsa';
+                        }
+
+                        return $record->is_active ? 'Aktif' : 'Nonaktif';
+                    })
                     ->badge()
-                    ->color(fn($state) => $state ? 'success' : 'danger'),
+                    ->color(function ($record) {
+                        if (!$record->provinsi_verified_at) {
+                            return 'warning';
+                        }
+
+                        if ($record->isSp3Expired() || !$record->is_active) {
+                            return 'danger';
+                        }
+
+                        return 'success';
+                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -329,6 +367,20 @@ class UserResource extends Resource
                             return $query->whereNull('provinsi_verified_at');
                         }
                         return $query;
+                    })
+                    ->visible(fn() => auth()->user()->wewenang->nama === 'Disnak Provinsi'),
+                Tables\Filters\SelectFilter::make('is_active')
+                    ->label('Status Aktif')
+                    ->options([
+                        '1' => 'Aktif',
+                        '0' => 'Nonaktif',
+                    ])
+                    ->query(function ($query, array $data) {
+                        if (blank($data['value'] ?? null)) {
+                            return $query;
+                        }
+
+                        return $query->where('is_active', (bool) $data['value']);
                     })
                     ->visible(fn() => auth()->user()->wewenang->nama === 'Disnak Provinsi'),
             ])
@@ -394,12 +446,55 @@ class UserResource extends Resource
                             'provinsi_verified_by' => auth()->id(),
                             'tanggal_verifikasi' => $now,
                             'tanggal_berlaku' => $now->copy()->addYears(3),
+                            'is_active' => true,
                             'no_sp3' => $data['no_sp3'],
                             'no_register' => $data['no_register']
                         ]);
                         
                         \Filament\Notifications\Notification::make()
                             ->title('User berhasil diverifikasi oleh Provinsi')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('aktifkan_akun')
+                    ->label('Aktifkan')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->visible(function ($record) {
+                        $user = auth()->user();
+
+                        return ($user->wewenang->nama ?? null) === 'Disnak Provinsi' &&
+                            ($record->wewenang->nama ?? null) === 'Pengguna' &&
+                            $record->provinsi_verified_at &&
+                            !$record->is_active;
+                    })
+                    ->action(function ($record) {
+                        $record->update(['is_active' => true]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Akun pengguna berhasil diaktifkan')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('nonaktifkan_akun')
+                    ->label('Nonaktifkan')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(function ($record) {
+                        $user = auth()->user();
+
+                        return ($user->wewenang->nama ?? null) === 'Disnak Provinsi' &&
+                            ($record->wewenang->nama ?? null) === 'Pengguna' &&
+                            $record->provinsi_verified_at &&
+                            $record->is_active;
+                    })
+                    ->action(function ($record) {
+                        $record->update(['is_active' => false]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Akun pengguna berhasil dinonaktifkan')
                             ->success()
                             ->send();
                     }),

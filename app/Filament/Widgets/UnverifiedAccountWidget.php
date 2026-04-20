@@ -15,7 +15,7 @@ class UnverifiedAccountWidget extends Widget
     public static function canView(): bool
     {
         $user = auth()->user();
-        return $user->wewenang->nama === 'Pengguna' && !$user->provinsi_verified_at;
+        return $user->wewenang->nama === 'Pengguna' && !$user->isAccountActive();
     }
 
     public function getVerificationStatus(): array
@@ -33,6 +33,12 @@ class UnverifiedAccountWidget extends Widget
                 'status' => 'provinsi',
                 'message' => 'Sedang menunggu konfirmasi dari provinsi',
                 'description' => 'Maaf, akun Anda belum diverifikasi oleh provinsi. Silakan lengkapi dan perbarui dokumen SP3 Anda untuk dapat melakukan pengajuan. Untuk informasi lebih lanjut, silakan hubungi Disnak Provinsi NTB.'
+            ];
+        } elseif (!$user->is_active) {
+            return [
+                'status' => 'inactive',
+                'message' => 'Akun sedang nonaktif',
+                'description' => 'Akun Anda saat ini nonaktif. Silakan hubungi Disnak Provinsi NTB untuk proses aktivasi kembali.'
             ];
         }
         

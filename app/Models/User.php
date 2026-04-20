@@ -43,6 +43,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
             'kab_kota_verified_at' => 'datetime',
             'provinsi_verified_at' => 'datetime',
             'tanggal_verifikasi' => 'datetime',
@@ -79,6 +80,20 @@ class User extends Authenticatable implements FilamentUser
     public function provinsiVerifiedBy()
     {
         return $this->belongsTo(User::class, 'provinsi_verified_by');
+    }
+
+    public function isSp3Expired(): bool
+    {
+        if (!$this->tanggal_berlaku) {
+            return false;
+        }
+
+        return $this->tanggal_berlaku->isPast();
+    }
+
+    public function isAccountActive(): bool
+    {
+        return (bool) $this->provinsi_verified_at && (bool) $this->is_active;
     }
 
     /**

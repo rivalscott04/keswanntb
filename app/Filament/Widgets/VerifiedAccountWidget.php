@@ -14,7 +14,7 @@ class VerifiedAccountWidget extends Widget
     public static function canView(): bool
     {
         $user = auth()->user();
-        return $user->wewenang->nama === 'Pengguna' && $user->provinsi_verified_at && $user->sp3;
+        return $user->wewenang->nama === 'Pengguna' && $user->isAccountActive() && $user->sp3;
     }
 
     public function getSp3Url(): string
