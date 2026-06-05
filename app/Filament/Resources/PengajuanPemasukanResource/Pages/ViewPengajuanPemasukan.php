@@ -292,7 +292,8 @@ class ViewPengajuanPemasukan extends ViewRecord
             $record->kab_kota_tujuan_id,
             $record->jenis_kelamin,
             'pemasukan',
-            $isLombokTujuan ? 'Lombok' : null
+            $isLombokTujuan ? 'Lombok' : null,
+            $record->id
         );
     }
 }

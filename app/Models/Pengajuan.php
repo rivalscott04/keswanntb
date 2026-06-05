@@ -173,7 +173,8 @@ class Pengajuan extends Model
                     $this->tahun_pengajuan,
                     $this->jenis_ternak_id,
                     $this->jenis_kelamin,
-                    'pengeluaran'
+                    'pengeluaran',
+                    $this->id
                 );
             } else {
                 // Kuota pengeluaran dari kab/kota di Sumbawa (TIDAK akan dikurangi)
@@ -194,7 +195,8 @@ class Pengajuan extends Model
                             $this->kab_kota_tujuan_id,
                             $this->jenis_kelamin,
                             'pemasukan',
-                            'Lombok'
+                            'Lombok',
+                            $this->id
                         );
                     }
                 }
@@ -214,7 +216,8 @@ class Pengajuan extends Model
                         $this->kab_kota_tujuan_id,
                         $this->jenis_kelamin,
                         'pemasukan',
-                        'Lombok'
+                        'Lombok',
+                        $this->id
                     );
                 } else {
                     // Pemasukan ke kab/kota lain: per kab/kota
@@ -223,7 +226,9 @@ class Pengajuan extends Model
                         $this->jenis_ternak_id,
                         $this->kab_kota_tujuan_id,
                         $this->jenis_kelamin,
-                        'pemasukan'
+                        'pemasukan',
+                        null,
+                        $this->id
                     );
                 }
                 return $kuotaPemasukan;
@@ -237,7 +242,8 @@ class Pengajuan extends Model
                         $this->tahun_pengajuan,
                         $this->jenis_ternak_id,
                         $this->jenis_kelamin,
-                        'pengeluaran'
+                        'pengeluaran',
+                        $this->id
                     );
                 } else {
                     // Pengeluaran dari kab/kota di Sumbawa (TIDAK akan dikurangi)

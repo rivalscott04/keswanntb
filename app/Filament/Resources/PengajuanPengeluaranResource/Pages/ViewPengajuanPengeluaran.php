@@ -342,7 +342,8 @@ class ViewPengajuanPengeluaran extends ViewRecord
                 $record->tahun_pengajuan,
                 $record->jenis_ternak_id,
                 $record->jenis_kelamin,
-                'pengeluaran'
+                'pengeluaran',
+                $record->id
             );
         } else {
             // Pengeluaran dari kab/kota lain: per kab/kota
@@ -351,7 +352,9 @@ class ViewPengajuanPengeluaran extends ViewRecord
                 $record->jenis_ternak_id,
                 $record->kab_kota_asal_id,
                 $record->jenis_kelamin,
-                'pengeluaran'
+                'pengeluaran',
+                null,
+                $record->id
             );
         }
     }

@@ -52,7 +52,7 @@ class PenggunaanKuota extends Model
     /**
      * Hitung kuota tersisa untuk parameter tertentu
      */
-    public static function getKuotaTersisa($tahun, $jenisTernakId, $kabKotaId, $jenisKelamin, $jenisKuota, $pulau = null)
+    public static function getKuotaTersisa($tahun, $jenisTernakId, $kabKotaId, $jenisKelamin, $jenisKuota, $pulau = null, $excludePengajuanId = null)
     {
         // Ambil kuota total
         $kuotaTotal = Kuota::where('tahun', $tahun)
@@ -74,6 +74,9 @@ class PenggunaanKuota extends Model
             ->when($pulau, function ($query, $pulau) {
                 return $query->where('pulau', $pulau);
             })
+            ->when($excludePengajuanId, function ($query, $excludePengajuanId) {
+                return $query->where('pengajuan_id', '!=', $excludePengajuanId);
+            })
             ->sum('jumlah_digunakan');
 
         return max(0, $kuotaTotal - $kuotaDigunakan);
@@ -82,7 +85,7 @@ class PenggunaanKuota extends Model
     /**
      * Hitung kuota tersisa untuk pulau Lombok (semua kab/kota di Lombok)
      */
-    public static function getKuotaTersisaLombok($tahun, $jenisTernakId, $jenisKelamin, $jenisKuota)
+    public static function getKuotaTersisaLombok($tahun, $jenisTernakId, $jenisKelamin, $jenisKuota, $excludePengajuanId = null)
     {
         // Ambil kuota total untuk pulau Lombok (kab_kota_id = null, pulau = 'Lombok')
         $kuotaTotal = Kuota::where('tahun', $tahun)
@@ -99,6 +102,9 @@ class PenggunaanKuota extends Model
             ->where('jenis_kelamin', $jenisKelamin)
             ->where('jenis_penggunaan', $jenisKuota)
             ->where('pulau', 'Lombok')
+            ->when($excludePengajuanId, function ($query, $excludePengajuanId) {
+                return $query->where('pengajuan_id', '!=', $excludePengajuanId);
+            })
             ->sum('jumlah_digunakan');
 
         return max(0, $kuotaTotal - $kuotaDigunakan);
@@ -108,7 +114,7 @@ class PenggunaanKuota extends Model
      * Hitung kuota tersisa untuk seluruh NTB (global, tanpa pembagian per kab/kota)
      * Digunakan untuk sapi eksotik/Bali yang memiliki kuota total 60.000 ekor untuk seluruh NTB
      */
-    public static function getKuotaTersisaGlobalNTB($tahun, $jenisTernakId, $jenisKelamin, $jenisKuota)
+    public static function getKuotaTersisaGlobalNTB($tahun, $jenisTernakId, $jenisKelamin, $jenisKuota, $excludePengajuanId = null)
     {
         // Ambil kuota total untuk seluruh NTB (kab_kota_id = null, pulau = null)
         $kuotaTotal = Kuota::where('tahun', $tahun)
@@ -136,6 +142,9 @@ class PenggunaanKuota extends Model
             ->where('jenis_kelamin', $jenisKelamin)
             ->where('jenis_penggunaan', $jenisKuota)
             ->whereIn('kuota_id', $kuotaGlobalIds)
+            ->when($excludePengajuanId, function ($query, $excludePengajuanId) {
+                return $query->where('pengajuan_id', '!=', $excludePengajuanId);
+            })
             ->sum('jumlah_digunakan');
 
         return max(0, $kuotaTotal - $kuotaDigunakan);
