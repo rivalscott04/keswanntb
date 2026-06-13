@@ -82,6 +82,108 @@ class PenggunaanKuota extends Model
         return max(0, $kuotaTotal - $kuotaDigunakan);
     }
 
+    public static function getKabKotaLombok(): array
+    {
+        return [
+            'Kota Mataram',
+            'Kab. Lombok Barat',
+            'Kab. Lombok Tengah',
+            'Kab. Lombok Timur',
+            'Kab. Lombok Utara',
+        ];
+    }
+
+    public static function isKabKotaLombok(?KabKota $kabKota): bool
+    {
+        return $kabKota && in_array($kabKota->nama, self::getKabKotaLombok());
+    }
+
+    public static function isBibitSapi(?int $jenisTernakId): bool
+    {
+        if (!$jenisTernakId) {
+            return false;
+        }
+
+        $jenisTernak = JenisTernak::find($jenisTernakId);
+
+        return $jenisTernak && $jenisTernak->nama === 'Bibit Sapi';
+    }
+
+    /**
+     * Hitung kuota tersisa pengeluaran berdasarkan kab/kota asal.
+     * Bibit Sapi dari Lombok menggunakan kuota per kab/kota, jenis ternak lain dari Lombok global.
+     */
+    public static function getKuotaTersisaPengeluaranAsal(
+        $tahun,
+        $jenisTernakId,
+        $kabKotaAsalId,
+        $jenisKelamin,
+        $excludePengajuanId = null
+    ) {
+        $kabKotaAsal = KabKota::find($kabKotaAsalId);
+        $isLombokAsal = self::isKabKotaLombok($kabKotaAsal);
+
+        if ($isLombokAsal && self::isBibitSapi($jenisTernakId)) {
+            return self::getKuotaTersisa(
+                $tahun,
+                $jenisTernakId,
+                $kabKotaAsalId,
+                $jenisKelamin,
+                'pengeluaran',
+                'Lombok',
+                $excludePengajuanId
+            );
+        }
+
+        if ($isLombokAsal) {
+            return self::getKuotaTersisaLombok(
+                $tahun,
+                $jenisTernakId,
+                $jenisKelamin,
+                'pengeluaran',
+                $excludePengajuanId
+            );
+        }
+
+        return self::getKuotaTersisa(
+            $tahun,
+            $jenisTernakId,
+            $kabKotaAsalId,
+            $jenisKelamin,
+            'pengeluaran',
+            null,
+            $excludePengajuanId
+        );
+    }
+
+    /**
+     * Cari record kuota yang sesuai untuk pencatatan penggunaan kuota.
+     */
+    public static function findKuotaRecord($tahun, $jenisTernakId, $kabKotaId, $jenisKelamin, $jenisKuota): ?Kuota
+    {
+        $kabKota = KabKota::find($kabKotaId);
+        $isLombok = self::isKabKotaLombok($kabKota);
+
+        $query = Kuota::where('tahun', $tahun)
+            ->where('jenis_ternak_id', $jenisTernakId)
+            ->where('jenis_kelamin', $jenisKelamin)
+            ->where('jenis_kuota', $jenisKuota);
+
+        if ($jenisKuota === 'pengeluaran' && $isLombok) {
+            if (self::isBibitSapi($jenisTernakId)) {
+                return $query->where('kab_kota_id', $kabKotaId)->where('pulau', 'Lombok')->first();
+            }
+
+            return $query->whereNull('kab_kota_id')->where('pulau', 'Lombok')->first();
+        }
+
+        if ($jenisKuota === 'pemasukan' && $isLombok) {
+            return $query->where('kab_kota_id', $kabKotaId)->where('pulau', 'Lombok')->first();
+        }
+
+        return $query->where('kab_kota_id', $kabKotaId)->first();
+    }
+
     /**
      * Hitung kuota tersisa untuk pulau Lombok (semua kab/kota di Lombok)
      */

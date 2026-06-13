@@ -337,12 +337,12 @@ class ViewPengajuanPengeluaran extends ViewRecord
         $isLombokAsal = $kabKotaAsal && in_array($kabKotaAsal->nama, $kabKotaLombok);
 
         if ($isLombokAsal) {
-            // Pengeluaran dari Lombok: global
-            return \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+            // Pengeluaran dari Lombok (Bibit Sapi per kab/kota, lainnya global)
+            return \App\Models\PenggunaanKuota::getKuotaTersisaPengeluaranAsal(
                 $record->tahun_pengajuan,
                 $record->jenis_ternak_id,
+                $record->kab_kota_asal_id,
                 $record->jenis_kelamin,
-                'pengeluaran',
                 $record->id
             );
         } else {

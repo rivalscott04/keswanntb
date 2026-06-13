@@ -332,35 +332,16 @@ class PengajuanService
             ? $pengajuan->kab_kota_asal_id 
             : $pengajuan->kab_kota_tujuan_id;
 
-        // Cek apakah kab/kota ada di pulau Lombok
         $kabKota = \App\Models\KabKota::find($kabKotaId);
-        $kabKotaLombok = [
-            'Kota Mataram',
-            'Kab. Lombok Barat', 
-            'Kab. Lombok Tengah',
-            'Kab. Lombok Timur',
-            'Kab. Lombok Utara'
-        ];
-        $isLombok = $kabKota && in_array($kabKota->nama, $kabKotaLombok);
+        $isLombok = PenggunaanKuota::isKabKotaLombok($kabKota);
 
-        // Ambil kuota yang sesuai
-        $kuota = Kuota::where('tahun', $pengajuan->tahun_pengajuan)
-            ->where('jenis_ternak_id', $pengajuan->jenis_ternak_id)
-            ->where('jenis_kelamin', $pengajuan->jenis_kelamin)
-            ->where('jenis_kuota', $jenisPenggunaan)
-            ->when($isLombok && $jenisPenggunaan === 'pengeluaran', function ($query) {
-                // Untuk pengeluaran dari Lombok: global (kab_kota_id = null, pulau = 'Lombok')
-                return $query->where('kab_kota_id', null)->where('pulau', 'Lombok');
-            }, function ($query) use ($kabKotaId, $isLombok, $jenisPenggunaan) {
-                // Untuk pemasukan ke Lombok: per kab/kota (kab_kota_id = [id], pulau = 'Lombok')
-                // Untuk Sumbawa dan lainnya: per kab/kota (kab_kota_id = [id], pulau sesuai)
-                $query->where('kab_kota_id', $kabKotaId);
-                if ($isLombok && $jenisPenggunaan === 'pemasukan') {
-                    $query->where('pulau', 'Lombok');
-                }
-                return $query;
-            })
-            ->first();
+        $kuota = PenggunaanKuota::findKuotaRecord(
+            $pengajuan->tahun_pengajuan,
+            $pengajuan->jenis_ternak_id,
+            $kabKotaId,
+            $pengajuan->jenis_kelamin,
+            $jenisPenggunaan
+        );
 
         if ($kuota) {
             PenggunaanKuota::create([
@@ -397,35 +378,16 @@ class PengajuanService
             ? $pengajuan->kab_kota_asal_id 
             : $pengajuan->kab_kota_tujuan_id;
 
-        // Cek apakah kab/kota ada di pulau Lombok
         $kabKota = \App\Models\KabKota::find($kabKotaId);
-        $kabKotaLombok = [
-            'Kota Mataram',
-            'Kab. Lombok Barat', 
-            'Kab. Lombok Tengah',
-            'Kab. Lombok Timur',
-            'Kab. Lombok Utara'
-        ];
-        $isLombok = $kabKota && in_array($kabKota->nama, $kabKotaLombok);
+        $isLombok = PenggunaanKuota::isKabKotaLombok($kabKota);
 
-        // Ambil kuota yang sesuai
-        $kuota = Kuota::where('tahun', $pengajuan->tahun_pengajuan)
-            ->where('jenis_ternak_id', $pengajuan->jenis_ternak_id)
-            ->where('jenis_kelamin', $jenisKelamin)
-            ->where('jenis_kuota', $jenisPenggunaan)
-            ->when($isLombok && $jenisPenggunaan === 'pengeluaran', function ($query) {
-                // Untuk pengeluaran dari Lombok: global (kab_kota_id = null, pulau = 'Lombok')
-                return $query->where('kab_kota_id', null)->where('pulau', 'Lombok');
-            }, function ($query) use ($kabKotaId, $isLombok, $jenisPenggunaan) {
-                // Untuk pemasukan ke Lombok: per kab/kota (kab_kota_id = [id], pulau = 'Lombok')
-                // Untuk Sumbawa dan lainnya: per kab/kota (kab_kota_id = [id], pulau sesuai)
-                $query->where('kab_kota_id', $kabKotaId);
-                if ($isLombok && $jenisPenggunaan === 'pemasukan') {
-                    $query->where('pulau', 'Lombok');
-                }
-                return $query;
-            })
-            ->first();
+        $kuota = PenggunaanKuota::findKuotaRecord(
+            $pengajuan->tahun_pengajuan,
+            $pengajuan->jenis_ternak_id,
+            $kabKotaId,
+            $jenisKelamin,
+            $jenisPenggunaan
+        );
 
         if ($kuota) {
             PenggunaanKuota::create([

@@ -168,12 +168,12 @@ class Pengajuan extends Model
             // - Yang dikurangi hanya kuota pemasukan ke kab/kota di pulau Lombok
             // - Kuota pengeluaran dari kab/kota di pulau Lombok tetap dikurangi (global)
             if ($isLombokAsal) {
-                // Kuota pengeluaran dari pulau Lombok (akan dikurangi)
-                return \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                // Kuota pengeluaran dari pulau Lombok (Bibit Sapi per kab/kota, lainnya global)
+                return \App\Models\PenggunaanKuota::getKuotaTersisaPengeluaranAsal(
                     $this->tahun_pengajuan,
                     $this->jenis_ternak_id,
+                    $this->kab_kota_asal_id,
                     $this->jenis_kelamin,
-                    'pengeluaran',
                     $this->id
                 );
             } else {
@@ -237,12 +237,12 @@ class Pengajuan extends Model
                 // Kuota pengeluaran dari Lombok: global
                 // Kuota pengeluaran dari Sumbawa: TIDAK ada kuota (tidak dikurangi)
                 if ($isLombokAsal) {
-                    // Pengeluaran dari Lombok: global
-                    return \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
+                    // Pengeluaran dari Lombok (Bibit Sapi per kab/kota, lainnya global)
+                    return \App\Models\PenggunaanKuota::getKuotaTersisaPengeluaranAsal(
                         $this->tahun_pengajuan,
                         $this->jenis_ternak_id,
+                        $this->kab_kota_asal_id,
                         $this->jenis_kelamin,
-                        'pengeluaran',
                         $this->id
                     );
                 } else {

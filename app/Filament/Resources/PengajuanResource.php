@@ -69,11 +69,16 @@ class PengajuanResource extends Resource
             // - Kuota pengeluaran dari kab/kota di pulau Lombok tetap dikurangi (global)
             if ($perluKuotaPengeluaran) {
                 if ($isLombokAsal) {
-                    // Kuota pengeluaran dari pulau Lombok (akan dikurangi)
-                    $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaLombok(
-                        $tahun, $jenisTernakId, $jenisKelamin, 'pengeluaran'
+                    // Kuota pengeluaran dari pulau Lombok (Bibit Sapi per kab/kota, lainnya global)
+                    $kuotaPengeluaran = \App\Models\PenggunaanKuota::getKuotaTersisaPengeluaranAsal(
+                        $tahun,
+                        $jenisTernakId,
+                        $kabKotaAsalId,
+                        $jenisKelamin
                     );
-                    $lokasiKuota = 'Pulau Lombok';
+                    $lokasiKuota = \App\Models\PenggunaanKuota::isBibitSapi($jenisTernakId)
+                        ? ($kabKotaAsal ? $kabKotaAsal->nama : 'Pulau Lombok')
+                        : 'Pulau Lombok';
                 } else {
                     // Kuota pengeluaran dari kab/kota di Sumbawa (TIDAK akan dikurangi)
                     // Tetap tampilkan untuk informasi, tapi tidak akan divalidasi
